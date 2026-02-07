@@ -1,4 +1,4 @@
-# Human-Computer Interaction Project
+# Human-Computer Interaction Project -- Jesse Sciamanna
 
 ## 📌 Overview
 This repository contains the source code and documentation for my Human-Computer Interaction (HCI) course project. The goal of this project is to design and develop a user-centered website by applying HCI principles such as usability, accessibility, and iterative design.
