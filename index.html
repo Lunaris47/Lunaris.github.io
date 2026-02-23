@@ -1,42 +1,76 @@
-<html>
-	<head>
-		<title>My Webpage</title>
-		<link rel="stylesheet" href="./css.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cozy Book Log</title>
 
-	</head>
-	<body>
-    <div class="container">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-        <h1>Welcome to My Webpage</h1>
-        <p>This is a very basic HTML page.</p>
-		<p>This is a random second paragraph.</p>
-		<p>This is a random third paragraph.</p>
+    <!-- Header -->
+    <header>
+        <h1>📚 Cozy Book Log</h1>
+        <p>Track your reading journey</p>
+    </header>
 
-        <h2>Things I Like</h2>
-        <ul>
-            <li>Programming</li>
-            <li>Animals</li>
-            <li>Traveling</li>
-        </ul>
+    <!-- Search and Controls -->
+    <section class="controls">
+        <input type="text" id="searchInput" placeholder="Search books...">
 
-        <h2>My Image</h2>
-        <img src="snowyOwl.jpg">
+        <select id="sortSelect">
+            <option value="">Sort by</option>
+            <option value="title">Title</option>
+            <option value="status">Status</option>
+            <option value="rating">Rating</option>
+        </select>
 
-        <a href="https://www.google.com" target="_blank">
-            Click here to visit Google
-        </a>
-		
-		<h3>User Input</h3>
+        <select id="filterSelect">
+            <option value="">Filter by status</option>
+            <option value="to-read">To Read</option>
+            <option value="reading">Reading</option>
+            <option value="completed">Completed</option>
+        </select>
+    </section>
 
-		<input type="text" id="userInput" placeholder="Type something here">
+    <!-- Add Book Form -->
+    <section class="add-book">
+        <h2>Add a New Book</h2>
 
-		<button onclick="handleInput()">Submit</button>
+        <input type="text" id="titleInput" placeholder="Title">
+        <input type="text" id="authorInput" placeholder="Author">
+        <input type="text" id="genreInput" placeholder="Genre">
+        <input type="text" id="seriesInput" placeholder="Series">
 
-		<p id="output"></p>
+        <select id="statusInput">
+            <option value="to-read">To Read</option>
+            <option value="reading">Reading</option>
+            <option value="completed">Completed</option>
+        </select>
 
-		<script src="./js.js"></script>
+        <label>Rating:</label>
+        <select id="ratingInput">
+            <option value="0">No rating</option>
+            <option value="1">★☆☆☆☆</option>
+            <option value="2">★★☆☆☆</option>
+            <option value="3">★★★☆☆</option>
+            <option value="4">★★★★☆</option>
+            <option value="5">★★★★★</option>
+        </select>
 
-    </div>
+        <button id="addBookBtn">Add Book</button>
+    </section>
+
+    <!-- Book List -->
+    <section class="library">
+        <h2>Your Library</h2>
+
+        <div id="bookList">
+            <!-- Book cards will go here -->
+        </div>
+    </section>
+
+    <script src="script.js"></script>
 </body>
-
 </html>
