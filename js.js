@@ -11,13 +11,14 @@ let books = JSON.parse(localStorage.getItem("books")) || [];
 
 const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
+const sortSelect = document.getElementById("sortSelect"); // FIXED
+const filterSelect = document.getElementById("filterSelect");
 
 
 // ===============================
 // EVENT LISTENERS
 // ===============================
 
-// Add Book
 addBookBtn.addEventListener("click", function () {
 
     const title = document.getElementById("titleInput").value;
@@ -27,7 +28,6 @@ addBookBtn.addEventListener("click", function () {
     const status = document.getElementById("statusInput").value;
     const rating = Number(document.getElementById("ratingInput").value);
 
-    // Validation
     if (title === "") {
         alert("Please enter a title.");
         return;
@@ -49,11 +49,9 @@ addBookBtn.addEventListener("click", function () {
     clearForm();
 });
 
-
-// Live Search
-searchInput.addEventListener("input", function () {
-    renderBooks();
-});
+searchInput.addEventListener("input", renderBooks);
+sortSelect.addEventListener("change", renderBooks);
+filterSelect.addEventListener("change", renderBooks);
 
 
 // ===============================
@@ -84,16 +82,36 @@ function renderBooks() {
     bookList.innerHTML = "";
 
     const searchTerm = searchInput.value.toLowerCase();
+    const selectedFilter = filterSelect.value;
+    const selectedSort = sortSelect.value;
 
-    books.forEach(function (book, index) {
+    let filteredBooks = books.filter(book => {
 
-        // Search filter
-        if (
-            !book.title.toLowerCase().includes(searchTerm) &&
-            !book.author.toLowerCase().includes(searchTerm)
-        ) {
-            return;
-        }
+        const matchesSearch =
+            book.title.toLowerCase().includes(searchTerm) ||
+            (book.author && book.author.toLowerCase().includes(searchTerm));
+
+        const matchesFilter =
+            !selectedFilter || book.status === selectedFilter;
+
+        return matchesSearch && matchesFilter;
+    });
+
+    if (selectedSort === "title") {
+        filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    if (selectedSort === "rating") {
+        filteredBooks.sort((a, b) => b.rating - a.rating);
+    }
+
+    if (selectedSort === "status") {
+        filteredBooks.sort((a, b) => a.status.localeCompare(b.status));
+    }
+
+    filteredBooks.forEach(function (book) {
+
+        const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
         card.classList.add("book-card");
@@ -105,19 +123,24 @@ function renderBooks() {
             <p><strong>Series:</strong> ${book.series || "Standalone"}</p>
 
             <label>Status:</label>
-            <select onchange="changeStatus(${index}, this.value)">
+            <select onchange="changeStatus(${originalIndex}, this.value)">
                 <option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
                 <option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
                 <option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
             </select>
 
-            <p><strong>Rating:</strong> ${"★".repeat(book.rating)}</p>
+            <div>
+                <strong>Rating:</strong>
+                ${renderStars(book.rating, originalIndex)}
+            </div>
 
-            <button onclick="deleteBook(${index})">Delete</button>
+            <button onclick="deleteBook(${originalIndex})">Delete</button>
         `;
 
         bookList.appendChild(card);
     });
+
+    renderSeriesGroups(filteredBooks);
 }
 
 
@@ -133,7 +156,6 @@ function deleteBook(index) {
 
 function changeStatus(index, newStatus) {
     books[index].status = newStatus;
-
     saveToStorage();
 
     if (newStatus === "completed") {
@@ -143,6 +165,86 @@ function changeStatus(index, newStatus) {
     renderBooks();
 }
 
+function setRating(index, rating) {
+    books[index].rating = rating;
+    saveToStorage();
+    renderBooks();
+}
+
+
+// ===============================
+// STAR RENDERING
+// ===============================
+
+function renderStars(rating, index) {
+
+    let starsHTML = "";
+
+    for (let i = 1; i <= 5; i++) {
+        starsHTML += `
+            <span 
+                style="cursor:pointer; font-size:20px;"
+                onclick="setRating(${index}, ${i})"
+            >
+                ${i <= rating ? "★" : "☆"}
+            </span>
+        `;
+    }
+
+    return starsHTML;
+}
+
+
+// ===============================
+// SERIES GROUPING
+// ===============================
+
+function renderSeriesGroups(bookArray) {
+
+    const librarySection = document.querySelector(".library");
+
+    let oldGroup = document.getElementById("seriesGroups");
+    if (oldGroup) oldGroup.remove();
+
+    const groups = {};
+
+    bookArray.forEach(book => {
+        if (book.series && book.series !== "") {
+            if (!groups[book.series]) {
+                groups[book.series] = [];
+            }
+            groups[book.series].push(book);
+        }
+    });
+
+    const container = document.createElement("div");
+    container.id = "seriesGroups";
+
+    Object.keys(groups).forEach(seriesName => {
+
+        const booksInSeries = groups[seriesName];
+
+        const avgRating =
+            booksInSeries.reduce((sum, b) => sum + b.rating, 0) /
+            booksInSeries.length;
+
+        const groupDiv = document.createElement("div");
+        groupDiv.classList.add("book-card");
+
+        groupDiv.innerHTML = `
+            <h3>Series: ${seriesName}</h3>
+            <p><strong>Books:</strong> ${booksInSeries.length}</p>
+            <p><strong>Average Rating:</strong> ${"★".repeat(Math.round(avgRating))}</p>
+        `;
+
+        container.appendChild(groupDiv);
+    });
+
+    if (Object.keys(groups).length > 0) {
+        librarySection.appendChild(container);
+    }
+}
+
 
 // ===============================
 // COMPLETION TOAST
@@ -150,8 +252,7 @@ function changeStatus(index, newStatus) {
 
 function celebrateCompletion() {
     const toast = document.getElementById("toast");
-
-    if (!toast) return; // prevents crash if toast div missing
+    if (!toast) return;
 
     toast.textContent = "🎉 Congratulations on finishing your book!";
     toast.classList.add("show");
