@@ -109,3 +109,22 @@ section {
         max-width: 100%;
     }
 }
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #7a9e7e;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.toast.show {
+    opacity: 1;
+}

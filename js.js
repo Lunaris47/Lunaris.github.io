@@ -91,5 +91,11 @@ function changeStatus(index, newStatus) {
 }
 
 function celebrateCompletion() {
-    alert("🎉 Congratulations on finishing your book!");
+    const toast = document.getElementById("toast");
+    toast.textContent = "🎉 Congratulations on finishing your book!";
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
 }
