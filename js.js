@@ -1,9 +1,23 @@
-let books = [];
+// ===============================
+// DATA (Persistent)
+// ===============================
 
-// Get button
+let books = JSON.parse(localStorage.getItem("books")) || [];
+
+
+// ===============================
+// DOM ELEMENTS
+// ===============================
+
 const addBookBtn = document.getElementById("addBookBtn");
+const searchInput = document.getElementById("searchInput");
 
-// When button is clicked
+
+// ===============================
+// EVENT LISTENERS
+// ===============================
+
+// Add Book
 addBookBtn.addEventListener("click", function () {
 
     const title = document.getElementById("titleInput").value;
@@ -11,9 +25,9 @@ addBookBtn.addEventListener("click", function () {
     const genre = document.getElementById("genreInput").value;
     const series = document.getElementById("seriesInput").value;
     const status = document.getElementById("statusInput").value;
-    const rating = document.getElementById("ratingInput").value;
+    const rating = Number(document.getElementById("ratingInput").value);
 
-    // Simple validation
+    // Validation
     if (title === "") {
         alert("Please enter a title.");
         return;
@@ -30,9 +44,21 @@ addBookBtn.addEventListener("click", function () {
 
     books.push(book);
 
+    saveToStorage();
     renderBooks();
     clearForm();
 });
+
+
+// Live Search
+searchInput.addEventListener("input", function () {
+    renderBooks();
+});
+
+
+// ===============================
+// HELPER FUNCTIONS
+// ===============================
 
 function clearForm() {
     document.getElementById("titleInput").value = "";
@@ -43,12 +69,31 @@ function clearForm() {
     document.getElementById("ratingInput").value = "0";
 }
 
+function saveToStorage() {
+    localStorage.setItem("books", JSON.stringify(books));
+}
+
+
+// ===============================
+// RENDER BOOKS
+// ===============================
+
 function renderBooks() {
 
     const bookList = document.getElementById("bookList");
     bookList.innerHTML = "";
 
+    const searchTerm = searchInput.value.toLowerCase();
+
     books.forEach(function (book, index) {
+
+        // Search filter
+        if (
+            !book.title.toLowerCase().includes(searchTerm) &&
+            !book.author.toLowerCase().includes(searchTerm)
+        ) {
+            return;
+        }
 
         const card = document.createElement("div");
         card.classList.add("book-card");
@@ -75,13 +120,21 @@ function renderBooks() {
     });
 }
 
+
+// ===============================
+// ACTION FUNCTIONS
+// ===============================
+
 function deleteBook(index) {
     books.splice(index, 1);
+    saveToStorage();
     renderBooks();
 }
 
 function changeStatus(index, newStatus) {
     books[index].status = newStatus;
+
+    saveToStorage();
 
     if (newStatus === "completed") {
         celebrateCompletion();
@@ -90,8 +143,16 @@ function changeStatus(index, newStatus) {
     renderBooks();
 }
 
+
+// ===============================
+// COMPLETION TOAST
+// ===============================
+
 function celebrateCompletion() {
     const toast = document.getElementById("toast");
+
+    if (!toast) return; // prevents crash if toast div missing
+
     toast.textContent = "🎉 Congratulations on finishing your book!";
     toast.classList.add("show");
 
@@ -99,3 +160,10 @@ function celebrateCompletion() {
         toast.classList.remove("show");
     }, 3000);
 }
+
+
+// ===============================
+// INITIAL LOAD
+// ===============================
+
+renderBooks();
