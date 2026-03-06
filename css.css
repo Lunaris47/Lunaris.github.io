@@ -128,3 +128,13 @@ section {
 .toast.show {
     opacity: 1;
 }
+
+/* Visual Highlight to the Form */
+.edit-highlight {
+    animation: highlightFlash 1.2s ease;
+}
+
+@keyframes highlightFlash {
+    0% { background-color: #fff4c2; }
+    100% { background-color: transparent; }
+}

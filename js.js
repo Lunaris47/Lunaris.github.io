@@ -75,6 +75,8 @@ function clearForm() {
 	
 	editingIndex = null;
 	addBooksBtn.textContent = "Add Book";
+	
+	document.querySelector(".add-book h2").textContent = "Add a New Book";
 }
 
 function saveToStorage() {
@@ -196,6 +198,24 @@ function editBook(index) {
     editingIndex = index;
 
     addBookBtn.textContent = "Save Changes";
+	
+	// Scroll to the Form
+	document.querySelector(".add-book").scrollIntoView({
+		behavior: "smooth"
+	});
+	
+	// Highlight the form
+	const form = document.querySelector(".add-book");
+	
+	form.classList.add("edit-highlight");
+	
+	setTimeout(() => {
+		form.classList.remove("edit-highlight");
+	}, 1200);
+	
+	document.querySelector(".add-book h2").textContent = "Edit Book";
+
+	showEditToast();
 }
 
 
