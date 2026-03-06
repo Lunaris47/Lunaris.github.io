@@ -3,6 +3,7 @@
 // ===============================
 
 let books = JSON.parse(localStorage.getItem("books")) || [];
+let editingIndex = null;
 
 
 // ===============================
@@ -42,7 +43,13 @@ addBookBtn.addEventListener("click", function () {
         rating
     };
 
-    books.push(book);
+    if (editingIndex !== null) {
+		books[editingIndex] = book;
+		editingIndex = null;
+		addBookBtn.textContent = "Add Book";
+	} else {
+		books.push(book);
+}
 
     saveToStorage();
     renderBooks();
@@ -65,6 +72,9 @@ function clearForm() {
     document.getElementById("seriesInput").value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
+	
+	editingIndex = null;
+	addBooksBtn.textContent = "Add Book";
 }
 
 function saveToStorage() {
@@ -133,7 +143,8 @@ function renderBooks() {
                 <strong>Rating:</strong>
                 ${renderStars(book.rating, originalIndex)}
             </div>
-
+			
+			<button onClick="editBook(${originalIndex})">Edit</button>
             <button onclick="deleteBook(${originalIndex})">Delete</button>
         `;
 
@@ -169,6 +180,22 @@ function setRating(index, rating) {
     books[index].rating = rating;
     saveToStorage();
     renderBooks();
+}
+
+function editBook(index) {
+
+    const book = books[index];
+
+    document.getElementById("titleInput").value = book.title;
+    document.getElementById("authorInput").value = book.author;
+    document.getElementById("genreInput").value = book.genre;
+    document.getElementById("seriesInput").value = book.series;
+    document.getElementById("statusInput").value = book.status;
+    document.getElementById("ratingInput").value = book.rating;
+
+    editingIndex = index;
+
+    addBookBtn.textContent = "Save Changes";
 }
 
 
