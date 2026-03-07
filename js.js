@@ -476,10 +476,18 @@ function changeStatus(index, newStatus) {
     renderBooks();
 }
 
-function setRating(index, rating) {
-    books[index].rating = rating;
+function setRating(index, rating){
+
+    // If user clicks the same rating again, remove the rating
+    if(books[index].rating === rating){
+        books[index].rating = 0;
+    }else{
+        books[index].rating = rating;
+    }
+
     saveToStorage();
     renderBooks();
+
 }
 
 function editBook(index) {
@@ -527,13 +535,14 @@ function renderStars(rating, index) {
 
     for (let i = 1; i <= 5; i++) {
         starsHTML += `
-            <span 
-                style="cursor:pointer; font-size:20px;"
-                onclick="setRating(${index}, ${i})"
-            >
-                ${i <= rating ? "★" : "☆"}
-            </span>
-        `;
+		<span
+			style="cursor:pointer; font-size:20px;"
+			onclick="setRating(${index}, ${i})"
+			title="Click to rate ${i} star${i>1?"s":""}"
+		>
+		${i <= rating ? "★" : "☆"}
+		</span>
+		`;
     }
 
     return starsHTML;
