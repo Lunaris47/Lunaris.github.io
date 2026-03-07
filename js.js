@@ -16,6 +16,11 @@ const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect"); // FIXED
 const filterSelect = document.getElementById("filterSelect");
 const clearResultsBtn = document.getElementById("clearResults");
+const deleteModal = document.getElementById("deleteModal");
+const confirmDeleteBtn = document.getElementById("confirmDelete");
+const cancelDeleteBtn = document.getElementById("cancelDelete");
+
+let bookToDeleteIndex = null;
 
 
 // ===============================
@@ -242,14 +247,22 @@ function renderBooks() {
 	
 	const status = document.getElementById("libraryStatus");
 
+	let messages = [];
+
 	if(isSearching){
-		status.textContent = `Showing ${filteredBooks.length} result(s) for "${searchTerm}"`;
+		messages.push(`Search: "${searchTerm}"`);
 	}
-	else if(selectedFilter){
-		status.textContent = `Filtered by status: ${selectedFilter}`;
+
+	if(selectedFilter){
+		messages.push(`Filter: ${selectedFilter}`);
 	}
-	else if(selectedSort){
-		status.textContent = `Sorted by: ${selectedSort}`;
+
+	if(selectedSort){
+		messages.push(`Sort: ${selectedSort}`);
+	}
+
+	if(messages.length > 0){
+		status.textContent = `Showing ${filteredBooks.length} book(s) • ` + messages.join(" • ");
 	}
 	else{
 		status.textContent = "";
@@ -444,27 +457,12 @@ function renderBookshelf(){
 // ACTION FUNCTIONS
 // ===============================
 
-function deleteBook(index) {
+function deleteBook(index){
 
-    const bookTitle = books[index].title;
+    bookToDeleteIndex = index;
 
-    const confirmed = confirm(`Delete "${bookTitle}" from your library?`);
+    deleteModal.style.display = "flex";
 
-    if (!confirmed) return;
-
-    books.splice(index, 1);
-	
-	//Fix selected index
-	if(selectedBookIndex === index){
-		selectedBookIndex = null;
-	}
-	
-	if(selectedBookIndex > index){
-		selectedBookIndex--;
-	}
-	
-    saveToStorage();
-    renderBooks();
 }
 
 function changeStatus(index, newStatus) {
@@ -591,6 +589,63 @@ function renderSeriesGroups(bookArray) {
         librarySection.appendChild(container);
     }
 }
+
+
+// ===============================
+// MODAL FUNCTION
+// ===============================
+
+confirmDeleteBtn.onclick = function(){
+
+    if(bookToDeleteIndex !== null){
+
+        books.splice(bookToDeleteIndex,1);
+
+        if(selectedBookIndex === bookToDeleteIndex){
+            selectedBookIndex = null;
+        }
+
+        if(selectedBookIndex > bookToDeleteIndex){
+            selectedBookIndex--;
+        }
+
+        saveToStorage();
+        renderBooks();
+    }
+
+    deleteModal.style.display = "none";
+}
+
+cancelDeleteBtn.onclick = function(){
+    deleteModal.style.display = "none";
+}
+
+
+// ===============================
+// BACK TO TOP BUTTON
+// ===============================
+
+const backToTopBtn = document.getElementById("backToTop");
+
+window.addEventListener("scroll", function(){
+
+    if(window.scrollY > 300){
+        backToTopBtn.style.display = "block";
+    }
+    else{
+        backToTopBtn.style.display = "none";
+    }
+
+});
+
+backToTopBtn.onclick = function(){
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+
+};
 
 
 // ===============================
