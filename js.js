@@ -5,6 +5,9 @@
 let books = JSON.parse(localStorage.getItem("books")) || [];
 let editingIndex = null;
 let selectedBookIndex = null;
+let recentlyDeletedBook = null;
+let recentlyDeletedIndex = null;
+let undoTimer = null;
 
 
 // ===============================
@@ -58,6 +61,7 @@ addBookBtn.addEventListener("click", function () {
         const updatedIndex = editingIndex;
 
         books[editingIndex] = book;
+		showToast("✏️ Book updated successfully.");
 
         editingIndex = null;
         addBookBtn.textContent = "Add Book";
@@ -81,7 +85,7 @@ addBookBtn.addEventListener("click", function () {
     // ADD NEW BOOK
     // ===============================
     books.push(book);
-
+	showToast("📚 Book added to your library!");
     saveToStorage();
     renderBooks();
     clearForm();
@@ -236,13 +240,17 @@ function renderBooks() {
     if (selectedSort === "title") {
         filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
     }
+	
+	if (selectedSort === "author") {
+        filteredBooks.sort((a, b) => (a.author || "").localeCompare(b.author || ""));
+    }
+	
+	if (selectedSort === "genre") {
+        filteredBooks.sort((a, b) => (a.genre || "").localeCompare(b.genre || ""));
+    }
 
     if (selectedSort === "rating") {
         filteredBooks.sort((a, b) => b.rating - a.rating);
-    }
-
-    if (selectedSort === "status") {
-        filteredBooks.sort((a, b) => a.status.localeCompare(b.status));
     }
 	
 	const status = document.getElementById("libraryStatus");
@@ -524,28 +532,91 @@ function editBook(index) {
 	showEditToast();
 }
 
+function showToast(message){
+
+    const toast = document.getElementById("toast");
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
+
+    setTimeout(()=>{
+        toast.classList.remove("show");
+    },2500);
+
+}
+
+function showUndoToast(){
+
+    const toast = document.getElementById("toast");
+
+    toast.innerHTML = `
+		🗑️ Book deleted 
+		<button onclick="undoDelete()">Undo</button>
+	`;
+
+    toast.classList.add("show");
+
+    clearTimeout(undoTimer);
+
+    undoTimer = setTimeout(()=>{
+        toast.classList.remove("show");
+        recentlyDeletedBook = null;
+        recentlyDeletedIndex = null;
+    },5000);
+
+}
+
+function undoDelete(){
+
+    if(recentlyDeletedBook !== null){
+
+        // Restore the book
+        books.splice(recentlyDeletedIndex, 0, recentlyDeletedBook);
+
+        saveToStorage();
+
+        // Select the restored book so the UI updates correctly
+        selectedBookIndex = recentlyDeletedIndex;
+
+        renderBooks();
+    }
+
+    const toast = document.getElementById("toast");
+    toast.classList.remove("show");
+
+    clearTimeout(undoTimer);
+
+    recentlyDeletedBook = null;
+    recentlyDeletedIndex = null;
+
+}
+
 
 // ===============================
 // STAR RENDERING
 // ===============================
 
-function renderStars(rating, index) {
+function renderStars(rating, index){
 
     let starsHTML = "";
 
-    for (let i = 1; i <= 5; i++) {
+    for(let i = 1; i <= 5; i++){
+
         starsHTML += `
-		<span
-			style="cursor:pointer; font-size:20px;"
-			onclick="setRating(${index}, ${i})"
-			title="Click to rate ${i} star${i>1?"s":""}"
-		>
-		${i <= rating ? "★" : "☆"}
-		</span>
-		`;
+        <span 
+            class="star"
+            data-value="${i}"
+            onclick="setRating(${index}, ${i})"
+        >
+            ${i <= rating ? "★" : "☆"}
+        </span>
+        `;
+
     }
 
     return starsHTML;
+
 }
 
 
@@ -608,7 +679,12 @@ confirmDeleteBtn.onclick = function(){
 
     if(bookToDeleteIndex !== null){
 
-        books.splice(bookToDeleteIndex,1);
+        // Store deleted book BEFORE removal
+        recentlyDeletedBook = books[bookToDeleteIndex];
+        recentlyDeletedIndex = bookToDeleteIndex;
+
+        // Remove book
+        books.splice(bookToDeleteIndex, 1);
 
         if(selectedBookIndex === bookToDeleteIndex){
             selectedBookIndex = null;
@@ -620,6 +696,10 @@ confirmDeleteBtn.onclick = function(){
 
         saveToStorage();
         renderBooks();
+		
+		showUndoToast();
+		
+		bookToDeleteIndex = null;
     }
 
     deleteModal.style.display = "none";
