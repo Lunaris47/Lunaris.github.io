@@ -43,13 +43,37 @@ addBookBtn.addEventListener("click", function () {
         rating
     };
 
+    // ===============================
+    // EDIT EXISTING BOOK
+    // ===============================
     if (editingIndex !== null) {
-		books[editingIndex] = book;
-		editingIndex = null;
-		addBookBtn.textContent = "Add Book";
-	} else {
-		books.push(book);
-}
+
+        const updatedIndex = editingIndex;
+
+        books[editingIndex] = book;
+
+        editingIndex = null;
+        addBookBtn.textContent = "Add Book";
+
+        saveToStorage();
+        renderBooks();
+
+        // Highlight updated card
+        setTimeout(() => {
+            const cards = document.querySelectorAll(".book-card");
+            if (cards[updatedIndex]) {
+                cards[updatedIndex].classList.add("book-updated");
+            }
+        }, 50);
+
+        clearForm();
+        return;
+    }
+
+    // ===============================
+    // ADD NEW BOOK
+    // ===============================
+    books.push(book);
 
     saveToStorage();
     renderBooks();
@@ -74,7 +98,7 @@ function clearForm() {
     document.getElementById("ratingInput").value = "0";
 	
 	editingIndex = null;
-	addBooksBtn.textContent = "Add Book";
+	addBookBtn.textContent = "Add Book";
 	
 	document.querySelector(".add-book h2").textContent = "Add a New Book";
 }
@@ -83,6 +107,47 @@ function saveToStorage() {
     localStorage.setItem("books", JSON.stringify(books));
 }
 
+async function getBookCover(book) {
+
+    // If we already have a saved cover, use it
+    if (book.coverURL) {
+        return book.coverURL;
+    }
+
+    const query = encodeURIComponent(`${book.title} ${book.author}`);
+
+    try {
+        const response = await fetch(`https://openlibrary.org/search.json?q=${query}`);
+        const data = await response.json();
+
+        if (!data.docs || data.docs.length === 0) return null;
+
+        const match = data.docs.find(item =>
+            item.title &&
+            item.title.toLowerCase().includes(book.title.toLowerCase())
+        ) || data.docs[0];
+
+        let cover = null;
+
+        if (match.isbn && match.isbn.length > 0) {
+            cover = `https://covers.openlibrary.org/b/isbn/${match.isbn[0]}-M.jpg`;
+        }
+        else if (match.cover_i) {
+            cover = `https://covers.openlibrary.org/b/id/${match.cover_i}-M.jpg`;
+        }
+
+        // Save cover so we don't fetch again
+        book.coverURL = cover;
+        saveToStorage();
+
+        return cover;
+
+    } catch (error) {
+        console.log("Cover lookup failed:", error);
+    }
+
+    return null;
+}
 
 // ===============================
 // RENDER BOOKS
@@ -121,34 +186,57 @@ function renderBooks() {
         filteredBooks.sort((a, b) => a.status.localeCompare(b.status));
     }
 
-    filteredBooks.forEach(function (book) {
+    filteredBooks.forEach(async function (book) {
 
         const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
-        card.classList.add("book-card");
+        card.classList.add("book-card", "book-added");
+		
+		const coverURL = await getBookCover(book);
 
         card.innerHTML = `
-            <h3>${book.title}</h3>
-            <p><strong>Author:</strong> ${book.author || "Unknown"}</p>
-            <p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
-            <p><strong>Series:</strong> ${book.series || "Standalone"}</p>
+			<div class="book-card-content">
 
-            <label>Status:</label>
-            <select onchange="changeStatus(${originalIndex}, this.value)">
-                <option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
-                <option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
-                <option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
-            </select>
+			<div class="book-info">
 
-            <div>
-                <strong>Rating:</strong>
-                ${renderStars(book.rating, originalIndex)}
-            </div>
+			<h3>${book.title}</h3>
+
+			<p><strong>Author:</strong> ${book.author || "Unknown"}</p>
+			<p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
+			<p><strong>Series:</strong> ${book.series || "Standalone"}</p>
+
+			<label>Status:</label>
+			<select onchange="changeStatus(${originalIndex}, this.value)">
+				<option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
+				<option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
+				<option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
+			</select>
+
+			<div class="book-actions">
+
+			<div class="book-rating">
+			<strong>Rating:</strong>
+			${renderStars(book.rating, originalIndex)}
+			</div>
+
+			<div class="book-buttons">
+			<button onclick="editBook(${originalIndex})">Edit</button>
+			<button onclick="deleteBook(${originalIndex})">Delete</button>
+			</div>
+
+			</div>
 			
-			<button onClick="editBook(${originalIndex})">Edit</button>
-            <button onclick="deleteBook(${originalIndex})">Delete</button>
-        `;
+			</div>
+
+			<img 
+				src="${coverURL || 'https://via.placeholder.com/100x150?text=No+Cover'}"
+				class="book-cover"
+				alt="Book Cover"
+			>
+
+			</div>
+			`;
 
         bookList.appendChild(card);
     });
@@ -162,6 +250,13 @@ function renderBooks() {
 // ===============================
 
 function deleteBook(index) {
+
+    const bookTitle = books[index].title;
+
+    const confirmed = confirm(`Delete "${bookTitle}" from your library?`);
+
+    if (!confirmed) return;
+
     books.splice(index, 1);
     saveToStorage();
     renderBooks();

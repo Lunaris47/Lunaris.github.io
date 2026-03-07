@@ -138,3 +138,96 @@ section {
     0% { background-color: #fff4c2; }
     100% { background-color: transparent; }
 }
+
+/* Visual representation of Book Cover */
+.book-cover-container {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.book-cover {
+    width: 90px;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+
+/* Content Layout (text + cover) */
+.book-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+/* Left side (text content) */
+.book-info {
+    flex: 1;
+}
+
+/* Book cover styling */
+.book-cover {
+    width: 110px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+/* Hover effect */
+.book-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.book-added {
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.book-updated {
+    animation: updateFlash 0.6s ease;
+}
+
+@keyframes updateFlash {
+    0% {
+        background-color: #fff4c2;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Rating + button layout */
+.book-actions {
+    margin-top: 10px;
+}
+
+.book-rating {
+    margin-bottom: 8px;
+}
+
+/* Button row */
+.book-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Edit button color */
+.book-buttons button:first-child {
+    background-color: #7a9e7e;
+}
+
+.book-buttons button:first-child:hover {
+    background-color: #5f8262;
+}
