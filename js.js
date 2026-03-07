@@ -15,6 +15,7 @@ const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect"); // FIXED
 const filterSelect = document.getElementById("filterSelect");
+const clearResultsBtn = document.getElementById("clearResults");
 
 
 // ===============================
@@ -91,8 +92,31 @@ searchInput.addEventListener("input", function(){
 	
 });
 
-sortSelect.addEventListener("change", renderBooks);
-filterSelect.addEventListener("change", renderBooks);
+sortSelect.addEventListener("change", function(){
+	
+	selectedBookIndex = null;
+	renderBooks();
+	
+});
+
+filterSelect.addEventListener("change", function(){
+	
+	selectedBookIndex = null;
+	renderBooks();
+	
+});
+
+clearResultsBtn.addEventListener("click", function(){
+
+    searchInput.value = "";
+    sortSelect.value = "";
+    filterSelect.value = "";
+
+    selectedBookIndex = null;
+
+    renderBooks();
+
+});
 
 
 // ===============================
@@ -173,6 +197,10 @@ function renderBooks() {
     const selectedSort = sortSelect.value;
 
     const isSearching = searchTerm.length > 0;
+	
+	const isFiltering = selectedFilter !== "";
+	const isSorting = selectedSort !== "";
+	const showResultsMode = isSearching || isFiltering || isSorting;
 
     let filteredBooks;
 
@@ -232,7 +260,7 @@ function renderBooks() {
     // BROWSING MODE (bookshelf controls)
     // ===============================
 
-    if(!isSearching){
+    if(!showResultsMode){
 
 		if(selectedBookIndex === null){
 
