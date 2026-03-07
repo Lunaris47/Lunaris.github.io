@@ -84,12 +84,19 @@ addBookBtn.addEventListener("click", function () {
     // ===============================
     // ADD NEW BOOK
     // ===============================
+	
     books.push(book);
+
+	// Immediately fetch cover so bookshelf updates instantly
+	getBookCover(book).then(() => {
+		saveToStorage();
+		renderBooks();
+	});
+
 	showToast("📚 Book added to your library!");
-    saveToStorage();
-    renderBooks();
-    clearForm();
-});
+	clearForm();
+	
+});	
 
 searchInput.addEventListener("input", function(){
 	
@@ -197,6 +204,15 @@ async function getBookCover(book) {
 // ===============================
 
 function renderBooks() {
+	
+	books.forEach(book => {
+		if(!book.coverURL){
+			getBookCover(book).then(()=>{
+				saveToStorage();
+				renderBookshelf();
+			});
+		}
+	});
 
     const bookList = document.getElementById("bookList");
     bookList.innerHTML = "";
@@ -350,10 +366,10 @@ function renderBooks() {
             </div>
 
             <img 
-                src="${coverURL || 'https://via.placeholder.com/100x150?text=No+Cover'}"
-                class="book-cover"
-                alt="Book Cover"
-            >
+				src="${coverURL || 'https://via.placeholder.com/100x150?text=Loading'}"
+				class="book-cover"
+				alt="Book Cover"
+			>
 
             </div>
         `;
@@ -425,8 +441,16 @@ function renderBookshelf(){
 
         img.classList.add("bookshelf-book");
 
-        img.src = book.coverURL || "https://via.placeholder.com/60x90?text=📖";
+        // If cover not loaded yet, fetch it
+		if(!book.coverURL){
+			getBookCover(book).then(()=>{
+				img.src = book.coverURL || "https://via.placeholder.com/60x90?text=No+Cover";
+				saveToStorage();
+			});
+		}
 
+		// Show placeholder while loading
+		img.src = book.coverURL || "https://via.placeholder.com/60x90?text=Loading";
 
         // Highlight books in the same series
         if(selectedBookIndex !== null){
