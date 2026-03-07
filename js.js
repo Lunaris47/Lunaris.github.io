@@ -4,6 +4,7 @@
 
 let books = JSON.parse(localStorage.getItem("books")) || [];
 let editingIndex = null;
+let selectedBookIndex = null;
 
 
 // ===============================
@@ -80,7 +81,16 @@ addBookBtn.addEventListener("click", function () {
     clearForm();
 });
 
-searchInput.addEventListener("input", renderBooks);
+searchInput.addEventListener("input", function(){
+	
+	if(searchInput.value.length > 0){
+		selectedBookIndex = null;
+	}
+	
+	renderBooks();
+	
+});
+
 sortSelect.addEventListener("change", renderBooks);
 filterSelect.addEventListener("change", renderBooks);
 
@@ -150,7 +160,7 @@ async function getBookCover(book) {
 }
 
 // ===============================
-// RENDER BOOKS
+// RENDER BOOKS && BOOKSHELF
 // ===============================
 
 function renderBooks() {
@@ -162,6 +172,8 @@ function renderBooks() {
     const selectedFilter = filterSelect.value;
     const selectedSort = sortSelect.value;
 
+    const isSearching = searchTerm.length > 0;
+
     let filteredBooks = books.filter(book => {
 
         const matchesSearch =
@@ -172,6 +184,7 @@ function renderBooks() {
             !selectedFilter || book.status === selectedFilter;
 
         return matchesSearch && matchesFilter;
+
     });
 
     if (selectedSort === "title") {
@@ -186,62 +199,131 @@ function renderBooks() {
         filteredBooks.sort((a, b) => a.status.localeCompare(b.status));
     }
 
+
+    // ===============================
+    // BROWSING MODE (bookshelf controls)
+    // ===============================
+
+    if(!isSearching){
+
+        if(selectedBookIndex === null){
+
+            bookList.innerHTML = `
+                <p style="opacity:0.7; text-align:center; padding:40px;">
+                📚 Select a book from the bookshelf above to view its details.
+                </p>
+            `;
+
+            renderBookshelf();
+            return;
+        }
+
+        filteredBooks = filteredBooks.filter(book =>
+            books.indexOf(book) === selectedBookIndex
+        );
+
+    }
+
+
+    // ===============================
+    // RENDER BOOK CARDS
+    // ===============================
+
     filteredBooks.forEach(async function (book) {
 
         const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
         card.classList.add("book-card", "book-added");
-		
-		const coverURL = await getBookCover(book);
+
+        const coverURL = await getBookCover(book);
 
         card.innerHTML = `
-			<div class="book-card-content">
+            <div class="book-card-content">
 
-			<div class="book-info">
+            <div class="book-info">
 
-			<h3>${book.title}</h3>
+            <h3>${book.title}</h3>
 
-			<p><strong>Author:</strong> ${book.author || "Unknown"}</p>
-			<p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
-			<p><strong>Series:</strong> ${book.series || "Standalone"}</p>
+            <p><strong>Author:</strong> ${book.author || "Unknown"}</p>
+            <p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
+            <p><strong>Series:</strong> ${book.series || "Standalone"}</p>
 
-			<label>Status:</label>
-			<select onchange="changeStatus(${originalIndex}, this.value)">
-				<option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
-				<option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
-				<option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
-			</select>
+            <label>Status:</label>
+            <select onchange="changeStatus(${originalIndex}, this.value)">
+                <option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
+                <option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
+                <option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
+            </select>
 
-			<div class="book-actions">
+            <div class="book-actions">
 
-			<div class="book-rating">
-			<strong>Rating:</strong>
-			${renderStars(book.rating, originalIndex)}
-			</div>
+            <div class="book-rating">
+            <strong>Rating:</strong>
+            ${renderStars(book.rating, originalIndex)}
+            </div>
 
-			<div class="book-buttons">
-			<button onclick="editBook(${originalIndex})">Edit</button>
-			<button onclick="deleteBook(${originalIndex})">Delete</button>
-			</div>
+            <div class="book-buttons">
+            <button onclick="editBook(${originalIndex})">Edit</button>
+            <button onclick="deleteBook(${originalIndex})">Delete</button>
+            </div>
 
-			</div>
-			
-			</div>
+            </div>
 
-			<img 
-				src="${coverURL || 'https://via.placeholder.com/100x150?text=No+Cover'}"
-				class="book-cover"
-				alt="Book Cover"
-			>
+            </div>
 
-			</div>
-			`;
+            <img 
+                src="${coverURL || 'https://via.placeholder.com/100x150?text=No+Cover'}"
+                class="book-cover"
+                alt="Book Cover"
+            >
+
+            </div>
+        `;
 
         bookList.appendChild(card);
+
     });
 
-    renderSeriesGroups(filteredBooks);
+
+    renderSeriesGroups(books);
+    renderBookshelf();
+
+}
+
+function renderBookshelf(){
+
+    const shelf = document.getElementById("bookshelfGrid");
+    shelf.innerHTML = "";
+
+    books.forEach((book, index) => {
+
+        const img = document.createElement("img");
+
+        img.classList.add("bookshelf-book");
+
+		if(selectedBookIndex !== null){
+			const selectedSeries = books[selectedBookIndex].series;
+
+			if(book.series === selectedSeries){
+				img.classList.add("series-highlight");
+			}
+		}
+
+        img.src = book.coverURL || "https://via.placeholder.com/60x90?text=📖";
+
+        img.onclick = () => {
+
+            selectedBookIndex = index;
+			
+			renderBooks();
+
+        };
+
+        shelf.appendChild(img);
+
+    });
+
 }
 
 

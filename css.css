@@ -264,6 +264,14 @@ section {
     border:1px solid #d8cbb5;
 }
 
+.panel{
+    transition:box-shadow 0.2s ease;
+}
+
+.panel:hover{
+    box-shadow:0 6px 14px rgba(0,0,0,0.08);
+}
+
 .book-rating span{
     font-size:20px;
     cursor:pointer;
@@ -279,4 +287,48 @@ section {
 .form-row{
     display:flex;
     gap:12px;
+}
+
+/* BookShelf Grid */
+.bookshelf{
+    max-width:1000px;
+    margin:30px auto;
+}
+
+#bookshelfGrid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    padding:20px;
+    background:#c9a77a;
+    border-radius:8px;
+    position:relative;
+}
+
+/* shelf plank */
+#bookshelfGrid::after{
+    content:"";
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:8px;
+    background:#8b5e3c;
+}
+
+.bookshelf-book{
+    width:60px;
+    height:90px;
+    object-fit:cover;
+    border-radius:3px;
+    cursor:pointer;
+    transition:transform 0.15s ease;
+}
+
+.bookshelf-book:hover{
+    transform:translateY(-4px);
+}
+
+.series-highlight{
+    box-shadow:0 0 6px rgba(255,215,0,0.8);
 }
