@@ -359,3 +359,18 @@ transition:transform 0.15s ease;
 .series-mini-book:hover{
 transform:translateY(-3px);
 }
+
+/* Visual Feedback for sorted/selected books */
+
+/* Selected book */
+.selected-book{
+outline:3px solid #7a9e7e;
+transform:translateY(-6px);
+box-shadow:0 8px 14px rgba(0,0,0,0.25);
+}
+
+
+/* Books in same series */
+.series-highlight{
+box-shadow:0 0 6px rgba(255,215,0,0.7);
+}

@@ -183,7 +183,8 @@ function renderBooks() {
 
 			const matchesSearch =
 				book.title.toLowerCase().includes(searchTerm) ||
-				(book.author && book.author.toLowerCase().includes(searchTerm));
+				(book.author && book.author.toLowerCase().includes(searchTerm)) ||
+				(book.series && book.series.toLowerCase().includes(searchTerm));
 
 			const matchesFilter =
 				!selectedFilter || book.status === selectedFilter;
@@ -210,6 +211,21 @@ function renderBooks() {
     if (selectedSort === "status") {
         filteredBooks.sort((a, b) => a.status.localeCompare(b.status));
     }
+	
+	const status = document.getElementById("libraryStatus");
+
+	if(isSearching){
+		status.textContent = `Showing ${filteredBooks.length} result(s) for "${searchTerm}"`;
+	}
+	else if(selectedFilter){
+		status.textContent = `Filtered by status: ${selectedFilter}`;
+	}
+	else if(selectedSort){
+		status.textContent = `Sorted by: ${selectedSort}`;
+	}
+	else{
+		status.textContent = "";
+	}
 
 
     // ===============================
@@ -360,21 +376,32 @@ function renderBookshelf(){
 
         img.classList.add("bookshelf-book");
 
-		if(selectedBookIndex !== null){
-			const selectedSeries = books[selectedBookIndex].series;
-
-			if(book.series === selectedSeries){
-				img.classList.add("series-highlight");
-			}
-		}
-
         img.src = book.coverURL || "https://via.placeholder.com/60x90?text=📖";
+
+
+        // Highlight books in the same series
+        if(selectedBookIndex !== null){
+
+            const selectedSeries = books[selectedBookIndex].series;
+
+            if(book.series === selectedSeries){
+                img.classList.add("series-highlight");
+            }
+
+        }
+
+
+        // Highlight the selected book
+        if(index === selectedBookIndex){
+            img.classList.add("selected-book");
+        }
+
 
         img.onclick = () => {
 
             selectedBookIndex = index;
-			
-			renderBooks();
+
+            renderBooks();
 
         };
 
@@ -398,6 +425,16 @@ function deleteBook(index) {
     if (!confirmed) return;
 
     books.splice(index, 1);
+	
+	//Fix selected index
+	if(selectedBookIndex === index){
+		selectedBookIndex = null;
+	}
+	
+	if(selectedBookIndex > index){
+		selectedBookIndex--;
+	}
+	
     saveToStorage();
     renderBooks();
 }
