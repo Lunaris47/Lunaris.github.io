@@ -108,6 +108,10 @@ section {
     .add-book select {
         max-width: 100%;
     }
+	
+	.top-panels {
+		flex-direction:column;
+	}
 }
 
 /* Toast Notification */
@@ -230,4 +234,49 @@ section {
 
 .book-buttons button:first-child:hover {
     background-color: #5f8262;
+}
+
+/* Top Panels Layout */
+.top-panels{
+    max-width:1000px;
+    margin:20px auto;
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+}
+
+/* Shared panel styling */
+.panel{
+    flex:1;
+    background:#fffaf3;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+.panel input,
+.panel select{
+    width:100%;
+    max-width:350px;
+    padding:10px;
+    margin-bottom:12px;
+    border-radius:6px;
+    border:1px solid #d8cbb5;
+}
+
+.book-rating span{
+    font-size:20px;
+    cursor:pointer;
+    color:#6b5c4d;
+}
+
+.book-rating{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.form-row{
+    display:flex;
+    gap:12px;
 }

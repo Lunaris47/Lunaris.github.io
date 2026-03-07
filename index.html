@@ -16,7 +16,45 @@
     </header>
 
     <!-- Search and Controls -->
-    <section class="controls">
+    <section class="top-panels">
+
+    <!-- Add Book Panel -->
+    <div class="panel add-book">
+        <h2>Add a New Book</h2>
+
+        <input type="text" id="titleInput" placeholder="Title">
+        <input type="text" id="authorInput" placeholder="Author">
+        <input type="text" id="genreInput" placeholder="Genre">
+        <input type="text" id="seriesInput" placeholder="Series">
+
+        <div class="form-row">
+
+		<select id="statusInput">
+			<option value="to-read">To Read</option>
+			<option value="reading">Reading</option>
+			<option value="completed">Completed</option>
+		</select>
+
+		<select id="ratingInput">
+			<option value="0">No rating</option>
+			<option value="1">★☆☆☆☆</option>
+			<option value="2">★★☆☆☆</option>
+			<option value="3">★★★☆☆</option>
+			<option value="4">★★★★☆</option>
+			<option value="5">★★★★★</option>
+		</select>
+
+	</div>
+
+        <button id="addBookBtn">Add Book</button>
+    </div>
+
+
+    <!-- Search / Sort / Filter Panel -->
+    <div class="panel controls-panel">
+
+        <h2>Find Books</h2>
+
         <input type="text" id="searchInput" placeholder="Search books...">
 
         <select id="sortSelect">
@@ -32,35 +70,10 @@
             <option value="reading">Reading</option>
             <option value="completed">Completed</option>
         </select>
-    </section>
 
-    <!-- Add Book Form -->
-    <section class="add-book">
-        <h2>Add a New Book</h2>
+    </div>
 
-        <input type="text" id="titleInput" placeholder="Title">
-        <input type="text" id="authorInput" placeholder="Author">
-        <input type="text" id="genreInput" placeholder="Genre">
-        <input type="text" id="seriesInput" placeholder="Series">
-
-        <select id="statusInput">
-            <option value="to-read">To Read</option>
-            <option value="reading">Reading</option>
-            <option value="completed">Completed</option>
-        </select>
-
-        <label>Rating:</label>
-        <select id="ratingInput">
-            <option value="0">No rating</option>
-            <option value="1">★☆☆☆☆</option>
-            <option value="2">★★☆☆☆</option>
-            <option value="3">★★★☆☆</option>
-            <option value="4">★★★★☆</option>
-            <option value="5">★★★★★</option>
-        </select>
-
-        <button id="addBookBtn">Add Book</button>
-    </section>
+</section>
 
     <!-- Book List -->
     <section class="library">
