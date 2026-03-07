@@ -168,24 +168,36 @@ function renderBooks() {
     const bookList = document.getElementById("bookList");
     bookList.innerHTML = "";
 
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value.toLowerCase().trim();
     const selectedFilter = filterSelect.value;
     const selectedSort = sortSelect.value;
 
     const isSearching = searchTerm.length > 0;
 
-    let filteredBooks = books.filter(book => {
+    let filteredBooks;
 
-        const matchesSearch =
-            book.title.toLowerCase().includes(searchTerm) ||
-            (book.author && book.author.toLowerCase().includes(searchTerm));
+	if(isSearching){
 
-        const matchesFilter =
-            !selectedFilter || book.status === selectedFilter;
+		// SEARCH MODE
+		filteredBooks = books.filter(book => {
 
-        return matchesSearch && matchesFilter;
+			const matchesSearch =
+				book.title.toLowerCase().includes(searchTerm) ||
+				(book.author && book.author.toLowerCase().includes(searchTerm));
 
-    });
+			const matchesFilter =
+				!selectedFilter || book.status === selectedFilter;
+
+			return matchesSearch && matchesFilter;
+
+		});
+
+	}else{
+
+		// BROWSING MODE
+		filteredBooks = books;
+
+	}
 
     if (selectedSort === "title") {
         filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
@@ -206,23 +218,21 @@ function renderBooks() {
 
     if(!isSearching){
 
-        if(selectedBookIndex === null){
+		if(selectedBookIndex === null){
 
-            bookList.innerHTML = `
-                <p style="opacity:0.7; text-align:center; padding:40px;">
-                📚 Select a book from the bookshelf above to view its details.
-                </p>
-            `;
+			bookList.innerHTML = `
+				<p style="opacity:0.7; text-align:center; padding:40px;">
+				📚 Select a book from the bookshelf above to view its details.
+				</p>
+			`;
 
-            renderBookshelf();
-            return;
-        }
+			renderBookshelf();
+			return;
+		}
 
-        filteredBooks = filteredBooks.filter(book =>
-            books.indexOf(book) === selectedBookIndex
-        );
+		filteredBooks = [books[selectedBookIndex]];
 
-    }
+	}
 
 
     // ===============================
@@ -248,6 +258,8 @@ function renderBooks() {
             <p><strong>Author:</strong> ${book.author || "Unknown"}</p>
             <p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
             <p><strong>Series:</strong> ${book.series || "Standalone"}</p>
+			
+			<div class="series-info" id="series-${originalIndex}"></div>
 
             <label>Status:</label>
             <select onchange="changeStatus(${originalIndex}, this.value)">
@@ -282,12 +294,58 @@ function renderBooks() {
         `;
 
         bookList.appendChild(card);
+		renderSeriesInfo(book, originalIndex);
 
     });
-
-
-    renderSeriesGroups(books);
+	
     renderBookshelf();
+
+}
+
+function renderSeriesInfo(book, index){
+
+    if(!book.series || book.series === "Standalone") return;
+
+    const container = document.getElementById(`series-${index}`);
+
+    const booksInSeries = books.filter(b => b.series === book.series);
+
+    const avgRating =
+        booksInSeries.reduce((sum,b)=>sum+b.rating,0) /
+        booksInSeries.length;
+
+    const stars = "★".repeat(Math.round(avgRating));
+
+    container.innerHTML = `
+        <div class="series-box">
+
+            <h4>📚 ${book.series} Series</h4>
+
+            <p><strong>Books in your library:</strong> ${booksInSeries.length}</p>
+            <p><strong>Average Rating:</strong> ${stars || "No ratings yet"}</p>
+
+            <div class="series-books"></div>
+
+        </div>
+    `;
+
+    const shelf = container.querySelector(".series-books");
+
+    booksInSeries.forEach(b => {
+
+        const img = document.createElement("img");
+
+        img.src = b.coverURL || "https://via.placeholder.com/50x75";
+        img.classList.add("series-mini-book");
+
+        img.onclick = () => {
+            selectedBookIndex = books.indexOf(b);
+            renderBooks();
+        };
+
+        shelf.appendChild(img);
+
+    });
 
 }
 

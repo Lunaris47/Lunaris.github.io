@@ -332,3 +332,30 @@ section {
 .series-highlight{
     box-shadow:0 0 6px rgba(255,215,0,0.8);
 }
+
+/* Series section */
+.series-box{
+margin-top:15px;
+padding:12px;
+background:#f5efe5;
+border-radius:8px;
+}
+
+.series-books{
+display:flex;
+gap:8px;
+margin-top:8px;
+}
+
+.series-mini-book{
+width:40px;
+height:60px;
+object-fit:cover;
+cursor:pointer;
+border-radius:3px;
+transition:transform 0.15s ease;
+}
+
+.series-mini-book:hover{
+transform:translateY(-3px);
+}
