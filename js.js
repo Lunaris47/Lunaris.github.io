@@ -397,11 +397,17 @@ function renderBooks() {
 
             </div>
 
-            <img 
-				src="${coverURL || 'https://via.placeholder.com/100x150?text=Loading'}"
-				class="book-cover"
-				alt="Book Cover"
-			>
+            ${coverURL ? `
+				<img 
+					src="${coverURL}"
+					class="book-cover"
+					alt="Book Cover"
+				>
+			` : `
+				<div class="no-cover">
+					📖 No cover found in the OpenLibrary database
+				</div>
+			`}
 
             </div>
         `;
@@ -451,7 +457,7 @@ function renderSeriesInfo(book, index){
         img.src = b.coverURL || "https://via.placeholder.com/50x75";
         img.classList.add("series-mini-book");
 
-        img.onclick = () => {
+        bookElement.onclick = () => {
 
 			// Clear search/filter/sort so the clicked book takes priority
 			searchInput.value = "";
@@ -477,7 +483,7 @@ function renderSeriesInfo(book, index){
 
 		};
 
-        shelf.appendChild(img);
+        shelf.appendChild(bookElement);
 
     });
 
@@ -490,66 +496,82 @@ function renderBookshelf(){
 
     books.forEach((book, index) => {
 
-        const img = document.createElement("img");
+        let bookElement;
 
-        img.classList.add("bookshelf-book");
+        // If we have a cover → show image
+        if(book.coverURL){
 
-        // If cover not loaded yet, fetch it
-		if(!book.coverURL){
-			getBookCover(book).then(()=>{
-				img.src = book.coverURL || "https://via.placeholder.com/60x90?text=No+Cover";
-				saveToStorage();
-			});
-		}
+            bookElement = document.createElement("img");
+            bookElement.src = book.coverURL;
 
-		// Show placeholder while loading
-		img.src = book.coverURL || "https://via.placeholder.com/60x90?text=Loading";
+        } 
+        else {
 
-        // Highlight books in the same series
+            // Try fetching a cover in the background
+            getBookCover(book).then((cover)=>{
+
+                if(cover){
+                    book.coverURL = cover;
+                    saveToStorage();
+                    renderBookshelf();
+                }
+
+            });
+
+            // Show text fallback
+            bookElement = document.createElement("div");
+            bookElement.classList.add("bookshelf-book-text");
+
+            bookElement.innerHTML = `
+                <div class="book-title">${book.title}</div>
+                <div class="book-author">${book.author || ""}</div>
+            `;
+        }
+
+        bookElement.classList.add("bookshelf-book");
+
+        // Highlight same series
         if(selectedBookIndex !== null){
 
             const selectedSeries = books[selectedBookIndex].series;
 
             if(book.series === selectedSeries){
-                img.classList.add("series-highlight");
+                bookElement.classList.add("series-highlight");
             }
 
         }
 
-
-        // Highlight the selected book
+        // Highlight selected
         if(index === selectedBookIndex){
-            img.classList.add("selected-book");
+            bookElement.classList.add("selected-book");
         }
 
+        bookElement.onclick = () => {
 
-        img.onclick = () => {
+            searchInput.value = "";
+            filterSelect.value = "";
+            sortSelect.value = "";
 
-			// Clear search/filter/sort so bookshelf selection takes priority
-			searchInput.value = "";
-			filterSelect.value = "";
-			sortSelect.value = "";
+            selectedBookIndex = index;
 
-			selectedBookIndex = index;
+            renderBooks();
 
-			renderBooks();
+            setTimeout(() => {
 
-			setTimeout(() => {
+                const card = document.querySelector(".book-card");
 
-				const card = document.querySelector(".book-card");
+                if(card){
+                    card.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                }
 
-				if(card){
-					card.scrollIntoView({
-						behavior: "smooth",
-						block: "center"
-					});
-				}
+            },150);
 
-			}, 150);
+        };
 
-		};
-
-        shelf.appendChild(img);
+        shelf.appendChild(bookElement);
 
     });
 

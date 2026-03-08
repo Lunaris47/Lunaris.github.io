@@ -492,3 +492,40 @@ section {
 	cursor:pointer;
 	font-weight:bold;
 }
+
+.bookshelf-book-text{
+    width:60px;
+    height:90px;
+    background:#e9dfcc;
+    border-radius:4px;
+    padding:4px;
+    font-size:9px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    overflow:hidden;
+}
+
+.book-title{
+    font-weight:bold;
+}
+
+.book-author{
+    font-size:8px;
+    opacity:0.8;
+}
+
+.no-cover{
+    width:110px;
+    height:160px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:#f1e8d8;
+    border-radius:6px;
+    font-size:12px;
+    padding:10px;
+}
