@@ -64,6 +64,10 @@ addBookBtn.addEventListener("click", function () {
 
 			books[editingIndex] = book;
 
+			const editedIndex = editingIndex;
+
+			selectedBookIndex = editedIndex;   // ⭐ show the edited book in the library
+
 			saveToStorage();
 			renderBooks();
 
@@ -72,6 +76,19 @@ addBookBtn.addEventListener("click", function () {
 			editingIndex = null;
 			addBookBtn.textContent = "Add Book";
 			clearForm();
+
+			setTimeout(() => {
+
+				const card = document.querySelector(".book-card");
+
+				if(card){
+					card.scrollIntoView({
+						behavior: "smooth",
+						block: "center"
+					});
+				}
+
+			}, 150);
 
 		});
 
@@ -435,9 +452,30 @@ function renderSeriesInfo(book, index){
         img.classList.add("series-mini-book");
 
         img.onclick = () => {
-            selectedBookIndex = books.indexOf(b);
-            renderBooks();
-        };
+
+			// Clear search/filter/sort so the clicked book takes priority
+			searchInput.value = "";
+			filterSelect.value = "";
+			sortSelect.value = "";
+
+			selectedBookIndex = books.indexOf(b);
+
+			renderBooks();
+
+			setTimeout(() => {
+
+				const card = document.querySelector(".book-card");
+
+				if(card){
+					card.scrollIntoView({
+						behavior: "smooth",
+						block: "center"
+					});
+				}
+
+			}, 150);
+
+		};
 
         shelf.appendChild(img);
 
@@ -487,6 +525,11 @@ function renderBookshelf(){
 
         img.onclick = () => {
 
+			// Clear search/filter/sort so bookshelf selection takes priority
+			searchInput.value = "";
+			filterSelect.value = "";
+			sortSelect.value = "";
+
 			selectedBookIndex = index;
 
 			renderBooks();
@@ -502,7 +545,7 @@ function renderBookshelf(){
 					});
 				}
 
-			}, 100);
+			}, 150);
 
 		};
 
