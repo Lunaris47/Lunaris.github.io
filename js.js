@@ -482,11 +482,24 @@ function renderBookshelf(){
 
         img.onclick = () => {
 
-            selectedBookIndex = index;
+			selectedBookIndex = index;
 
-            renderBooks();
+			renderBooks();
 
-        };
+			setTimeout(() => {
+
+				const card = document.querySelector(".book-card");
+
+				if(card){
+					card.scrollIntoView({
+						behavior: "smooth",
+						block: "center"
+					});
+				}
+
+			}, 100);
+
+		};
 
         shelf.appendChild(img);
 
