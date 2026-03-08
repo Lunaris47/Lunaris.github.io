@@ -58,30 +58,33 @@ addBookBtn.addEventListener("click", function () {
     // ===============================
     if(editingIndex !== null){
 
-        books[editingIndex] = book;
+		getBookCover(book).then((cover)=>{
 
-        getBookCover(book).then((cover)=>{
-            book.coverURL = cover;
+			book.coverURL = cover;
 
-            saveToStorage();
-            renderBooks();
+			books[editingIndex] = book;
 
-            showToast("✏️ Book updated successfully.");
+			saveToStorage();
+			renderBooks();
 
-            editingIndex = null;
-            addBookBtn.textContent = "Add Book";
-            clearForm();
-        });
+			showToast("✏️ Book updated successfully.");
 
-        return;
-    }
+			editingIndex = null;
+			addBookBtn.textContent = "Add Book";
+			clearForm();
+
+		});
+
+		return;
+	}
 
     // ===============================
     // PREVENT DUPLICATE TITLES
     // ===============================
-    const duplicateTitle = books.some(existing =>
-        existing.title.trim().toLowerCase() === title.toLowerCase()
-    );
+    const duplicateTitle = books.some((existing, index) =>
+		index !== editingIndex &&
+		existing.title.trim().toLowerCase() === title.toLowerCase()
+	);
 
     if(duplicateTitle){
         showToast("⚠️ This book already exists in your library.");
@@ -93,9 +96,11 @@ addBookBtn.addEventListener("click", function () {
     // ===============================
     getBookCover(book).then((cover)=>{
 
-        const duplicateCover = books.some(existing =>
-            existing.coverURL && existing.coverURL === cover
-        );
+        const duplicateCover = books.some((existing, index) =>
+			index !== editingIndex &&
+			existing.coverURL &&
+			existing.coverURL === cover
+		);
 
         if(duplicateCover){
             showToast("⚠️ This book already exists in your library.");
