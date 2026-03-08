@@ -529,3 +529,32 @@ section {
     font-size:12px;
     padding:10px;
 }
+
+.search-bar{
+    display:flex;
+    width:100%;
+    margin-bottom:10px;
+}
+
+.search-bar input{
+    flex:1;
+    padding:8px;
+    border-radius:6px 0 0 6px;
+    border:1px solid #ccc;
+    border-right:none;
+    font-size:14px;
+}
+
+.search-bar button{
+    padding:8px 16px;
+    border-radius:0 6px 6px 0;
+    border:1px solid #ccc;
+    background:#4a6fa5;
+    color:white;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.search-bar button:hover{
+    background:#3a5b8c;
+}
