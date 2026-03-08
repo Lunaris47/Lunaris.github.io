@@ -16,6 +16,7 @@ let undoTimer = null;
 
 const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
 const sortSelect = document.getElementById("sortSelect"); // FIXED
 const filterSelect = document.getElementById("filterSelect");
 const clearResultsBtn = document.getElementById("clearResults");
@@ -139,16 +140,6 @@ addBookBtn.addEventListener("click", function () {
 
 });	
 
-searchInput.addEventListener("input", function(){
-	
-	if(searchInput.value.length > 0){
-		selectedBookIndex = null;
-	}
-	
-	renderBooks();
-	
-});
-
 sortSelect.addEventListener("change", function(){
 	
 	selectedBookIndex = null;
@@ -172,6 +163,16 @@ clearResultsBtn.addEventListener("click", function(){
     selectedBookIndex = null;
 
     renderBooks();
+
+});
+
+searchBtn.addEventListener("click", runSearch);
+
+searchInput.addEventListener("keydown", function(event){
+
+    if(event.key === "Enter"){
+        runSearch();
+    }
 
 });
 
@@ -239,6 +240,23 @@ async function getBookCover(book) {
 
     return null;
 }
+
+function runSearch(){
+
+    selectedBookIndex = null;
+
+    renderBooks();
+
+    const librarySection = document.querySelector(".library");
+
+    if(librarySection){
+        librarySection.scrollIntoView({
+            behavior:"smooth"
+        });
+    }
+
+}
+
 
 // ===============================
 // RENDER BOOKS && BOOKSHELF
@@ -418,6 +436,7 @@ function renderBooks() {
     });
 	
     renderBookshelf();
+	renderCurrentlyReading();
 
 }
 
@@ -572,6 +591,44 @@ function renderBookshelf(){
         };
 
         shelf.appendChild(bookElement);
+
+    });
+
+}
+
+function renderCurrentlyReading(){
+
+    const container = document.getElementById("readingBooks");
+
+    if(!container) return;
+
+    container.innerHTML = "";
+
+    const readingBooks = books.filter(book => book.status === "reading");
+
+    if(readingBooks.length === 0){
+
+        container.innerHTML = `
+        <p style="opacity:0.6">
+        You are not currently reading any books.
+        </p>
+        `;
+
+        return;
+    }
+
+    readingBooks.forEach(book => {
+
+        const div = document.createElement("div");
+
+        div.classList.add("reading-book");
+
+        div.innerHTML = `
+        <strong>${book.title}</strong><br>
+        <span>${book.author || ""}</span>
+        `;
+
+        container.appendChild(div);
 
     });
 
