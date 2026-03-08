@@ -32,14 +32,14 @@ let bookToDeleteIndex = null;
 
 addBookBtn.addEventListener("click", function () {
 
-    const title = document.getElementById("titleInput").value;
-    const author = document.getElementById("authorInput").value;
+    const title = document.getElementById("titleInput").value.trim();
+    const author = document.getElementById("authorInput").value.trim();
     const genre = document.getElementById("genreInput").value;
     const series = document.getElementById("seriesInput").value;
     const status = document.getElementById("statusInput").value;
     const rating = Number(document.getElementById("ratingInput").value);
 
-    if (title === "") {
+    if(title === ""){
         alert("Please enter a title.");
         return;
     }
@@ -56,46 +56,65 @@ addBookBtn.addEventListener("click", function () {
     // ===============================
     // EDIT EXISTING BOOK
     // ===============================
-    if (editingIndex !== null) {
-
-        const updatedIndex = editingIndex;
+    if(editingIndex !== null){
 
         books[editingIndex] = book;
-		showToast("✏️ Book updated successfully.");
 
-        editingIndex = null;
-        addBookBtn.textContent = "Add Book";
+        getBookCover(book).then((cover)=>{
+            book.coverURL = cover;
 
-        saveToStorage();
-        renderBooks();
+            saveToStorage();
+            renderBooks();
 
-        // Highlight updated card
-        setTimeout(() => {
-            const cards = document.querySelectorAll(".book-card");
-            if (cards[updatedIndex]) {
-                cards[updatedIndex].classList.add("book-updated");
-            }
-        }, 50);
+            showToast("✏️ Book updated successfully.");
 
-        clearForm();
+            editingIndex = null;
+            addBookBtn.textContent = "Add Book";
+            clearForm();
+        });
+
         return;
     }
 
     // ===============================
-    // ADD NEW BOOK
+    // PREVENT DUPLICATE TITLES
     // ===============================
-	
-    books.push(book);
+    const duplicateTitle = books.some(existing =>
+        existing.title.trim().toLowerCase() === title.toLowerCase()
+    );
 
-	// Immediately fetch cover so bookshelf updates instantly
-	getBookCover(book).then(() => {
-		saveToStorage();
-		renderBooks();
-	});
+    if(duplicateTitle){
+        showToast("⚠️ This book already exists in your library.");
+        return;
+    }
 
-	showToast("📚 Book added to your library!");
-	clearForm();
-	
+    // ===============================
+    // FETCH COVER + ADD BOOK
+    // ===============================
+    getBookCover(book).then((cover)=>{
+
+        const duplicateCover = books.some(existing =>
+            existing.coverURL && existing.coverURL === cover
+        );
+
+        if(duplicateCover){
+            showToast("⚠️ This book already exists in your library.");
+            return;
+        }
+
+        book.coverURL = cover;
+
+        books.push(book);
+
+        saveToStorage();
+        renderBooks();
+
+        showToast("📚 Book added to your library!");
+
+        clearForm();
+
+    });
+
 });	
 
 searchInput.addEventListener("input", function(){
@@ -204,15 +223,6 @@ async function getBookCover(book) {
 // ===============================
 
 function renderBooks() {
-	
-	books.forEach(book => {
-		if(!book.coverURL){
-			getBookCover(book).then(()=>{
-				saveToStorage();
-				renderBookshelf();
-			});
-		}
-	});
 
     const bookList = document.getElementById("bookList");
     bookList.innerHTML = "";
@@ -641,57 +651,6 @@ function renderStars(rating, index){
 
     return starsHTML;
 
-}
-
-
-// ===============================
-// SERIES GROUPING
-// ===============================
-
-function renderSeriesGroups(bookArray) {
-
-    const librarySection = document.querySelector(".library");
-
-    let oldGroup = document.getElementById("seriesGroups");
-    if (oldGroup) oldGroup.remove();
-
-    const groups = {};
-
-    bookArray.forEach(book => {
-        if (book.series && book.series !== "") {
-            if (!groups[book.series]) {
-                groups[book.series] = [];
-            }
-            groups[book.series].push(book);
-        }
-    });
-
-    const container = document.createElement("div");
-    container.id = "seriesGroups";
-
-    Object.keys(groups).forEach(seriesName => {
-
-        const booksInSeries = groups[seriesName];
-
-        const avgRating =
-            booksInSeries.reduce((sum, b) => sum + b.rating, 0) /
-            booksInSeries.length;
-
-        const groupDiv = document.createElement("div");
-        groupDiv.classList.add("book-card");
-
-        groupDiv.innerHTML = `
-            <h3>Series: ${seriesName}</h3>
-            <p><strong>Books:</strong> ${booksInSeries.length}</p>
-            <p><strong>Average Rating:</strong> ${"★".repeat(Math.round(avgRating))}</p>
-        `;
-
-        container.appendChild(groupDiv);
-    });
-
-    if (Object.keys(groups).length > 0) {
-        librarySection.appendChild(container);
-    }
 }
 
 
