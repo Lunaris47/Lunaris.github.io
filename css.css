@@ -280,6 +280,19 @@ section {
     gap:10px;
 }
 
+.search-actions{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.search-actions button{
+    padding:10px 14px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
 /* BookShelf Grid */
 .bookshelf{
     max-width:1000px;
@@ -524,25 +537,18 @@ section {
 .search-bar{
     display:flex;
     width:100%;
-    margin-bottom:10px;
+    margin-bottom:12px;
+    align-items:stretch;
 }
 
 .search-bar input{
     flex:1;
-    padding:8px;
+    min-width:0;
+	width:auto;
+    padding:10px 12px;
     border-radius:6px 0 0 6px;
     border:1px solid #ccc;
     border-right:none;
-    font-size:14px;
-}
-
-.search-bar button{
-    padding:8px 16px;
-    border-radius:0 6px 6px 0;
-    border:1px solid #ccc;
-    background:#4a6fa5;
-    color:white;
-    cursor:pointer;
     font-size:14px;
 }
 
