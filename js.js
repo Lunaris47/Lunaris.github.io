@@ -359,6 +359,7 @@ function renderBooks() {
 
         renderBookshelf();
         renderCurrentlyReading();
+		renderFinishedReading();
         return;
     }
 
@@ -671,6 +672,77 @@ function renderCurrentlyReading(){
 
 }
 
+function renderFinishedReading(){
+
+    const container = document.getElementById("finishedBooks");
+    container.innerHTML = "";
+
+    const finishedBooks = books.filter(book => book.status === "completed");
+
+    finishedBooks.forEach(book => {
+
+        const index = books.indexOf(book);
+
+        const item = document.createElement("div");
+        item.classList.add("reading-book");
+
+        if(book.coverURL){
+
+            item.innerHTML = `
+                <img 
+                    src="${book.coverURL}"
+                    class="reading-cover"
+                >
+
+                <div class="reading-text">
+                    <div class="reading-title">${book.title}</div>
+                    <div class="reading-author">${book.author || ""}</div>
+                </div>
+            `;
+
+        }else{
+
+            item.innerHTML = `
+                <div class="bookshelf-book-text">
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">${book.author || ""}</div>
+                </div>
+
+                <div class="reading-text">
+                    <div class="reading-title">${book.title}</div>
+                    <div class="reading-author">${book.author || ""}</div>
+                </div>
+            `;
+
+        }
+
+        item.onclick = () => {
+
+            selectedBookIndex = index;
+
+            renderBooks();
+
+            setTimeout(() => {
+
+                const card = document.querySelector(".book-card");
+
+                if(card){
+                    card.scrollIntoView({
+                        behavior:"smooth",
+                        block:"center"
+                    });
+                }
+
+            },150);
+
+        };
+
+        container.appendChild(item);
+
+    });
+
+}
+
 
 // ===============================
 // ACTION FUNCTIONS
@@ -921,5 +993,6 @@ document.addEventListener("DOMContentLoaded", function(){
 
     renderBooks();
     renderCurrentlyReading();
+	renderFinishedReading();
 
 });
