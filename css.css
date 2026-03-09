@@ -585,8 +585,17 @@ body{
 }
 
 .library{
-	flex:1;
-	overflow-y:auto;
+    flex:1;
+    overflow-y:auto;
+}
+
+@media (max-width:768px){
+
+    .library{
+        max-height:none;
+        overflow:visible;
+    }
+
 }
 
 .bookshelf{
@@ -733,4 +742,52 @@ body{
     margin:10px 0 4px 0;
     font-size:14px;
     opacity:0.8;
+}
+
+/* ===============================
+   Mobile Layout Fix
+=============================== */
+
+@media (max-width: 768px){
+
+    .app-layout{
+        display:flex;
+        flex-direction:column;
+        padding:15px;
+        gap:15px;
+    }
+
+    .left-panel,
+    .right-panel{
+        width:100%;
+    }
+
+}
+
+@media (max-width:768px){
+
+    #bookshelfGrid{
+        justify-content:center;
+    }
+
+}
+
+@media (max-width:768px){
+
+    #readingBooks,
+    #finishedBooks{
+        flex-direction:row;
+        flex-wrap:wrap;
+        gap:8px;
+    }
+
+}
+
+@media (max-width:768px){
+
+    .bookshelf-book{
+        width:50px;
+        height:75px;
+    }
+
 }
