@@ -32,6 +32,10 @@ let bookToDeleteIndex = null;
 // EVENT LISTENERS
 // ===============================
 
+searchInput.addEventListener("input", renderBooks);
+sortSelect.addEventListener("change", renderBooks);
+filterSelect.addEventListener("change", renderBooks);
+
 addBookBtn.addEventListener("click", function () {
 
     const title = document.getElementById("titleInput").value.trim();
@@ -146,13 +150,6 @@ addBookBtn.addEventListener("click", function () {
     });
 
 });	
-
-sortSelect.addEventListener("change", function(){
-	
-	selectedBookIndex = null;
-	renderBooks();
-	
-});
 
 filterSelect.addEventListener("change", function(){
 	
@@ -319,8 +316,18 @@ function renderBooks() {
     }
 	
 	if (selectedSort === "author") {
-        filteredBooks.sort((a, b) => (a.author || "").localeCompare(b.author || ""));
-    }
+
+		const getLastName = (name) => {
+			if(!name) return "";
+			const parts = name.trim().split(" ");
+			return parts[parts.length - 1].toLowerCase();
+		};
+
+		filteredBooks.sort((a, b) =>
+			getLastName(a.author).localeCompare(getLastName(b.author))
+		);
+
+	}
 	
 	if (selectedSort === "genre") {
         filteredBooks.sort((a, b) => (a.genre || "").localeCompare(b.genre || ""));
