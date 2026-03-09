@@ -745,21 +745,24 @@ body{
 }
 
 /* ===============================
-   Mobile Layout Fix
+       MOBILE LAYOUT FIX
 =============================== */
 
-@media (max-width: 768px){
+html, body{
+    overflow-x:hidden;
+}
+
+@media (max-width:768px){
 
     .app-layout{
         display:flex;
         flex-direction:column;
-        padding:15px;
-        gap:15px;
+        height:auto;
     }
 
-    .left-panel,
     .right-panel{
-        width:100%;
+        overflow:visible;
+        height:auto;
     }
 
 }
