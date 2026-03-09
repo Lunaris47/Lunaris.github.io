@@ -728,14 +728,6 @@ body{
     background:#4caf50;
 }
 
-.shelf-legend{
-    font-size:12px;
-    opacity:0.7;
-    display:flex;
-    gap:12px;
-    margin-top:6px;
-}
-
 .bookshelf-section-title{
     width:100%;
     font-weight:bold;
