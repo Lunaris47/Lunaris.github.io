@@ -14,6 +14,7 @@ let undoTimer = null;
 // DOM ELEMENTS
 // ===============================
 
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -38,7 +39,13 @@ addBookBtn.addEventListener("click", function () {
     const genre = document.getElementById("genreInput").value;
     const series = document.getElementById("seriesInput").value;
     const status = document.getElementById("statusInput").value;
-    const rating = Number(document.getElementById("ratingInput").value);
+	let rating = Number(document.getElementById("ratingInput").value);
+
+	// Prevent rating if book is not completed
+	if(status !== "completed" && rating > 0){
+		showToast("⭐ You can only rate books after marking them as completed.");
+		return;
+	}
 
     if(title === ""){
         alert("Please enter a title.");
@@ -176,6 +183,16 @@ searchInput.addEventListener("keydown", function(event){
 
 });
 
+cancelEditBtn.addEventListener("click", function(){
+
+    clearForm();
+
+    editingIndex = null;
+
+    showToast("Edit canceled.");
+
+});
+
 
 // ===============================
 // HELPER FUNCTIONS
@@ -193,6 +210,8 @@ function clearForm() {
 	addBookBtn.textContent = "Add Book";
 	
 	document.querySelector(".add-book h2").textContent = "Add a New Book";
+	
+	cancelEditBtn.stlye.display = "none";
 }
 
 function saveToStorage() {
@@ -454,9 +473,15 @@ function renderSeriesInfo(book, index){
 
     const booksInSeries = books.filter(b => b.series === book.series);
 
-    const avgRating =
-        booksInSeries.reduce((sum,b)=>sum+b.rating,0) /
-        booksInSeries.length;
+    const completedBooks = booksInSeries.filter(b => b.status === "completed");
+
+	let avgRating = 0;
+
+	if(completedBooks.length > 0){
+		avgRating =
+			completedBooks.reduce((sum,b)=>sum+b.rating,0) /
+			completedBooks.length;
+	}
 
     const stars = "★".repeat(Math.round(avgRating));
 
@@ -831,6 +856,7 @@ function editBook(index) {
     editingIndex = index;
 
     addBookBtn.textContent = "Save Changes";
+	cancelEditBtn.style.display = "inline-block";
 	
 	// Scroll to the Form
 	document.querySelector(".add-book").scrollIntoView({
