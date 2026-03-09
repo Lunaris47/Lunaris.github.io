@@ -14,6 +14,12 @@
         <h1>📚 Cozy Book Log</h1>
         <p>Track your reading journey</p>
     </header>
+	
+	<div class="reading-stats">
+		<div class="stat">📚 To Read: <span id="toReadCount">0</span></div>
+		<div class="stat">📖 Reading: <span id="readingCount">0</span></div>
+		<div class="stat">✅ Finished: <span id="finishedCount">0</span></div>
+	</div>
 
     <div class="app-layout">
 
@@ -109,6 +115,11 @@
 
 		<section class="bookshelf">
 			<h2>📚 My Bookshelf</h2>
+			<div class="shelf-legend">
+				<span>📚 To Read</span>
+				<span>📖 Reading</span>
+				<span>✅ Finished</span>
+			</div>
 			<div id="bookshelfGrid"></div>
 		</section>
 

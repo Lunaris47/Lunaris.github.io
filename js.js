@@ -360,6 +360,7 @@ function renderBooks() {
         renderBookshelf();
         renderCurrentlyReading();
 		renderFinishedReading();
+		renderReadingStats();
         return;
     }
 
@@ -517,88 +518,111 @@ function renderBookshelf(){
 
     const shelf = document.getElementById("bookshelfGrid");
     shelf.innerHTML = "";
-	
-	if(books.length === 0){
-		shelf.innerHTML = "<p style='opacity:0.6'>No books added yet.</p>";
-		return;
-	}
 
-    books.forEach((book, index) => {
+    if(books.length === 0){
+        shelf.innerHTML = "<p style='opacity:0.6'>No books added yet.</p>";
+        return;
+    }
 
-        let bookElement;
+    const groups = {
+        reading: books.filter(b => b.status === "reading"),
+        toRead: books.filter(b => b.status === "to-read"),
+        completed: books.filter(b => b.status === "completed")
+    };
 
-        if(book.coverURL){
+    function renderSection(title, bookArray){
 
-            bookElement = document.createElement("img");
-            bookElement.src = book.coverURL;
+        if(bookArray.length === 0) return;
 
-        } else {
+        const header = document.createElement("div");
+        header.classList.add("bookshelf-section-title");
+        header.textContent = title;
 
-            bookElement = document.createElement("div");
-            bookElement.classList.add("bookshelf-book-text");
+        shelf.appendChild(header);
 
-            bookElement.innerHTML = `
-                <div class="book-title">${book.title}</div>
-                <div class="book-author">${book.author || ""}</div>
-            `;
+        bookArray.forEach(book => {
 
-            // Fetch cover ONCE but DO NOT rerender shelf
-            getBookCover(book).then((cover)=>{
-                if(cover){
-                    book.coverURL = cover;
-                    saveToStorage();
-                }
-            });
-        }
+            const index = books.indexOf(book);
+            let bookElement;
 
-        bookElement.classList.add("bookshelf-book");
+            if(book.coverURL){
 
-        if(selectedBookIndex !== null){
+                bookElement = document.createElement("img");
+                bookElement.src = book.coverURL;
 
-            const selectedSeries = books[selectedBookIndex].series;
+            }else{
 
-            if(book.series === selectedSeries){
-                bookElement.classList.add("series-highlight");
+                bookElement = document.createElement("div");
+                bookElement.classList.add("bookshelf-book-text");
+
+                bookElement.innerHTML = `
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">${book.author || ""}</div>
+                `;
+
+                getBookCover(book).then((cover)=>{
+                    if(cover){
+                        book.coverURL = cover;
+                        saveToStorage();
+                    }
+                });
             }
 
-        }
+            bookElement.classList.add("bookshelf-book");
+            bookElement.classList.add(`status-${book.status}`);
 
-        if(index === selectedBookIndex){
-            bookElement.classList.add("selected-book");
-        }
+            if(selectedBookIndex !== null){
 
-        bookElement.onclick = () => {
+                const selectedSeries = books[selectedBookIndex].series;
 
-            searchInput.value = "";
-            filterSelect.value = "";
-            sortSelect.value = "";
-
-            selectedBookIndex = index;
-
-            renderBooks();
-
-            setTimeout(() => {
-
-                const card = document.querySelector(".book-card");
-
-                if(card){
-                    card.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center"
-                    });
+                if(book.series === selectedSeries){
+                    bookElement.classList.add("series-highlight");
                 }
 
-            },150);
+            }
 
-        };
-		
-		bookElement.title = `${book.title}
-		${book.author || "Unknown Author"}
-		${book.series ? `Series — ${book.series}` : "Standalone"}`;
-		
-        shelf.appendChild(bookElement);
+            if(index === selectedBookIndex){
+                bookElement.classList.add("selected-book");
+            }
 
-    });
+            bookElement.onclick = () => {
+
+                searchInput.value = "";
+                filterSelect.value = "";
+                sortSelect.value = "";
+
+                selectedBookIndex = index;
+
+                renderBooks();
+
+                setTimeout(() => {
+
+                    const card = document.querySelector(".book-card");
+
+                    if(card){
+                        card.scrollIntoView({
+                            behavior:"smooth",
+                            block:"center"
+                        });
+                    }
+
+                },150);
+
+            };
+
+            bookElement.title = `${book.title}
+${book.author || "Unknown Author"}
+${book.series ? `Series — ${book.series}` : "Standalone"}`;
+
+            shelf.appendChild(bookElement);
+
+        });
+
+    }
+
+    renderSection("📖 Reading", groups.reading);
+    renderSection("📚 To Read", groups.toRead);
+    renderSection("✅ Finished", groups.completed);
 
 }
 
@@ -740,6 +764,18 @@ function renderFinishedReading(){
         container.appendChild(item);
 
     });
+
+}
+
+function renderReadingStats(){
+
+    const toRead = books.filter(b => b.status === "to-read").length;
+    const reading = books.filter(b => b.status === "reading").length;
+    const finished = books.filter(b => b.status === "completed").length;
+
+    document.getElementById("toReadCount").textContent = toRead;
+    document.getElementById("readingCount").textContent = reading;
+    document.getElementById("finishedCount").textContent = finished;
 
 }
 
@@ -994,5 +1030,6 @@ document.addEventListener("DOMContentLoaded", function(){
     renderBooks();
     renderCurrentlyReading();
 	renderFinishedReading();
+	renderReadingStats();
 
 });
