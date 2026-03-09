@@ -296,30 +296,22 @@ function renderBooks() {
 	const isSorting = selectedSort !== "";
 	const showResultsMode = isSearching || isFiltering || isSorting;
 
-    let filteredBooks;
+    let filteredBooks = books;
 
+	// Apply search
 	if(isSearching){
+		filteredBooks = filteredBooks.filter(book =>
+			book.title.toLowerCase().includes(searchTerm) ||
+			(book.author && book.author.toLowerCase().includes(searchTerm)) ||
+			(book.series && book.series.toLowerCase().includes(searchTerm))
+		);
+	}
 
-		// SEARCH MODE
-		filteredBooks = books.filter(book => {
-
-			const matchesSearch =
-				book.title.toLowerCase().includes(searchTerm) ||
-				(book.author && book.author.toLowerCase().includes(searchTerm)) ||
-				(book.series && book.series.toLowerCase().includes(searchTerm));
-
-			const matchesFilter =
-				!selectedFilter || book.status === selectedFilter;
-
-			return matchesSearch && matchesFilter;
-
-		});
-
-	}else{
-
-		// BROWSING MODE
-		filteredBooks = books;
-
+	// Apply filter
+	if(selectedFilter){
+		filteredBooks = filteredBooks.filter(book =>
+			book.status === selectedFilter
+		);
 	}
 
     if (selectedSort === "title") {

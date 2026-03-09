@@ -219,6 +219,20 @@ section {
     margin-bottom: 8px;
 }
 
+button{
+    transition:transform .1s ease, box-shadow .1s ease;
+}
+
+button:hover{
+    transform:translateY(-1px);
+}
+
+input:focus{
+    outline:none;
+    border-color:#7a9e7e;
+    box-shadow:0 0 0 2px rgba(122,158,126,0.2);
+}
+
 /* Button row */
 .book-buttons {
     display: flex;
@@ -582,7 +596,13 @@ section {
     background:white;
     padding:16px;
     border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    transition:transform .15s ease, box-shadow .15s ease;
+}
+
+.panel:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 22px rgba(0,0,0,0.12);
 }
 
 body{
