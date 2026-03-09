@@ -406,7 +406,8 @@ function renderBooks() {
         const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
-        card.classList.add("book-card", "book-added");
+		card.classList.add("book-card", "book-added");
+		card.id = `book-${originalIndex}`;
 
         const coverURL = book.coverURL || null;
 
@@ -980,7 +981,7 @@ function renderStars(rating, index){
 			${isCompleted ? `
 				onclick="setRating(${index}, ${i})"
 				onmouseover="previewRating(${index}, ${i})"
-				onmouseleave="renderBooks()"
+				onmouseout="restoreRating(${index})"
 			` : ""}
 		>
 		${i <= rating ? "★" : "☆"}
@@ -993,10 +994,21 @@ function renderStars(rating, index){
 
 function previewRating(index, rating){
 
-    const stars = document.querySelectorAll(".star");
+    const stars = document.querySelectorAll(`#book-${index} .star`);
 
-    stars.forEach((star,i) => {
+    stars.forEach((star,i)=>{
         star.textContent = i < rating ? "★" : "☆";
+    });
+
+}
+
+function restoreRating(index){
+
+    const book = books[index];
+    const stars = document.querySelectorAll(`#book-${index} .star`);
+
+    stars.forEach((star,i)=>{
+        star.textContent = i < book.rating ? "★" : "☆";
     });
 
 }
