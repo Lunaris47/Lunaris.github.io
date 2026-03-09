@@ -552,11 +552,11 @@ section {
 
 .app-layout{
     display:grid;
-    grid-template-columns:320px 1fr;
+    grid-template-columns:280px 1fr;
     gap:25px;
     padding:25px;
     align-items:start;
-	height:calc(100vh - 120px);
+	min-height:calc(100vh - 120px);
 }
 
 .left-panel{
@@ -569,8 +569,8 @@ section {
     display:flex;
     flex-direction:column;
     gap:20px;
-    height:100%;
-	overflow:hidden;
+    height:auto;
+	overflow:visible;
 }
 
 .panel{
