@@ -447,7 +447,7 @@ function renderBooks() {
             </div>
 
             <div class="book-buttons">
-            <button onclick="editBook(${originalIndex})">Edit</button>
+            <button onclick="enableInlineEdit(${originalIndex})">Edit</button>
             <button onclick="deleteBook(${originalIndex})">Delete</button>
             </div>
 
@@ -958,6 +958,76 @@ function undoDelete(){
     recentlyDeletedBook = null;
     recentlyDeletedIndex = null;
 
+}
+
+function enableInlineEdit(index){
+
+    const book = books[index];
+    const card = document.getElementById(`book-${index}`);
+
+    card.innerHTML = `
+        <div class="book-card-content">
+
+            <div class="book-info">
+
+                <label>Title</label>
+                <input id="edit-title-${index}" value="${book.title}">
+
+                <label>Author</label>
+                <input id="edit-author-${index}" value="${book.author || ""}">
+
+                <label>Genre</label>
+                <input id="edit-genre-${index}" value="${book.genre || ""}">
+
+                <label>Series</label>
+                <input id="edit-series-${index}" value="${book.series || ""}">
+
+                <label>Status</label>
+                <select id="edit-status-${index}">
+                    <option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
+                    <option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
+                    <option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
+                </select>
+
+                <div class="book-buttons">
+                    <button onclick="saveInlineEdit(${index})">Save</button>
+                    <button onclick="renderBooks()">Cancel</button>
+                </div>
+
+            </div>
+
+        </div>
+    `;
+}
+
+function saveInlineEdit(index){
+
+    const title = document.getElementById(`edit-title-${index}`).value.trim();
+    const author = document.getElementById(`edit-author-${index}`).value.trim();
+    const genre = document.getElementById(`edit-genre-${index}`).value.trim();
+    const series = document.getElementById(`edit-series-${index}`).value.trim();
+    const status = document.getElementById(`edit-status-${index}`).value;
+
+    if(title === ""){
+        showToast("Please enter a title.");
+        return;
+    }
+
+    books[index].title = title;
+    books[index].author = author;
+    books[index].genre = genre;
+    books[index].series = series;
+
+    if(status !== "completed"){
+        books[index].rating = 0;
+    }
+
+    books[index].status = status;
+
+    saveToStorage();
+    renderBooks();
+
+    showToast("Book updated successfully.");
 }
 
 

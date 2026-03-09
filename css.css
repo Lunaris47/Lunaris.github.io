@@ -766,6 +766,15 @@ body{
     opacity:0.8;
 }
 
+.book-card input,
+.book-card select{
+    width:100%;
+    padding:8px;
+    margin-bottom:8px;
+    border-radius:6px;
+    border:1px solid #d8cbb5;
+}
+
 /* ===============================
        MOBILE LAYOUT FIX
 =============================== */
