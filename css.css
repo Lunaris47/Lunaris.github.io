@@ -26,8 +26,6 @@ header p {
 
 /* Sections */
 section {
-    max-width: 800px;
-    margin: 20px auto;
     padding: 15px;
 }
 
@@ -238,11 +236,7 @@ section {
 
 /* Top Panels Layout */
 .top-panels{
-    max-width:1000px;
-    margin:20px auto;
-    display:flex;
-    gap:20px;
-    align-items:flex-start;
+    display:contents;
 }
 
 /* Shared panel styling */
@@ -257,11 +251,8 @@ section {
 .panel input,
 .panel select{
     width:100%;
-    max-width:350px;
-    padding:10px;
-    margin-bottom:12px;
-    border-radius:6px;
-    border:1px solid #d8cbb5;
+    box-sizing:border-box;
+	margin-bottom:12px;
 }
 
 .panel{
@@ -286,7 +277,7 @@ section {
 
 .form-row{
     display:flex;
-    gap:12px;
+    gap:10px;
 }
 
 /* BookShelf Grid */
@@ -557,4 +548,124 @@ section {
 
 .search-bar button:hover{
     background:#3a5b8c;
+}
+
+.app-layout{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:25px;
+    padding:25px;
+    align-items:start;
+	height:calc(100vh - 120px);
+}
+
+.left-panel{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.right-panel{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    height:100%;
+	overflow:hidden;
+}
+
+.panel{
+    background:white;
+    padding:16px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
+
+body{
+	min-height:100vh;
+}
+
+.library{
+	flex:1;
+	overflow-y:auto;
+}
+
+.bookshelf{
+	flex-shrink:0;
+}
+
+#readingBooks{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+/* Currently Reading Layout Improvement */
+
+.reading-book{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:6px 4px;
+    border-radius:6px;
+    transition:background 0.15s ease, transform 0.1s ease;
+}
+
+.reading-book:hover{
+    background:#f3ece0;
+    transform:translateX(3px);
+}
+
+/* Cover alignment */
+.reading-book img,
+.reading-book .bookshelf-book-text{
+    width:40px;
+    height:60px;
+    flex-shrink:0;
+}
+
+/* Title text */
+.reading-title{
+    font-weight:600;
+    font-size:15px;
+}
+
+.reading-author{
+    font-size:12px;
+    opacity:0.7;
+}
+
+.book-card select{
+    cursor:pointer;
+    border:2px solid #d8cbb5;
+    transition:border-color .15s ease, box-shadow .15s ease;
+}
+
+.book-card select:hover{
+    border-color:#7a9e7e;
+}
+
+.book-card select:focus{
+    outline:none;
+    border-color:#7a9e7e;
+    box-shadow:0 0 0 2px rgba(122,158,126,0.25);
+}
+
+.quick-update-label{
+    font-size:12px;
+    font-weight:600;
+    color:#7a9e7e;
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+.star-disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+}
+
+.rating-note{
+    font-size:11px;
+    opacity:0.7;
+    margin-top:4px;
 }

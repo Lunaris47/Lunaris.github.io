@@ -15,8 +15,9 @@
         <p>Track your reading journey</p>
     </header>
 
-    <!-- Search and Controls -->
-    <section class="top-panels">
+    <div class="app-layout">
+
+	<div class="left-panel">
 
     <!-- Add Book Panel -->
     <div class="panel add-book">
@@ -70,7 +71,7 @@
         <select id="sortSelect">
             <option value="">Sort by</option>
             <option value="title">Title</option>
-            <option value="status">Author</option>
+            <option value="author">Author</option>
 			<option value="genre">Genre</option>
             <option value="rating">Rating</option>
         </select>
@@ -86,7 +87,7 @@
 
     </div>
 	
-	<div class="currently-reading">
+	<div class="currently-reading panel">
 
 		<h2>Currently Reading</h2>
 
@@ -94,22 +95,28 @@
 
 	</div>
 
-</section>
+</div>
 
-	<section class="bookshelf">
-		<h2>📚 My Bookshelf</h2>
-		<div id="bookshelfGrid"></div>
-	</section>
+	<div class="right-panel">
 
-    <!-- Book List -->
-    <section class="library">
-        <h2>Your Library</h2>
-		<p id="libraryStatus"></p>
+		<section class="bookshelf">
+			<h2>📚 My Bookshelf</h2>
+			<div id="bookshelfGrid"></div>
+		</section>
 
-        <div id="bookList">
-            <!-- Book cards will go here -->
-        </div>
-    </section>
+		<!-- Book List -->
+		<section class="library">
+			<h2>Your Library</h2>
+			<p id="libraryStatus"></p>
+
+			<div id="bookList">
+				<!-- Book cards will go here -->
+			</div>
+		</section>
+	
+	</div>
+	
+	</div>
 
 	<div id="toast" class="toast"></div>
 	

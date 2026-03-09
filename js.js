@@ -349,35 +349,35 @@ function renderBooks() {
 
     if(!showResultsMode){
 
-		if(selectedBookIndex === null){
+    if(selectedBookIndex === null){
 
-			bookList.innerHTML = `
-				<p style="opacity:0.7; text-align:center; padding:40px;">
-				📚 Select a book from the bookshelf above to view its details.
-				</p>
-			`;
+        bookList.innerHTML = `
+            <p style="opacity:0.7; text-align:center; padding:40px;">
+            📚 Select a book from the bookshelf above to view its details.
+            </p>
+        `;
 
-			renderBookshelf();
-			return;
-		}
+        renderBookshelf();
+        renderCurrentlyReading();
+        return;
+    }
 
-		filteredBooks = [books[selectedBookIndex]];
-
-	}
+    filteredBooks = [books[selectedBookIndex]];
+}
 
 
     // ===============================
     // RENDER BOOK CARDS
     // ===============================
 
-    filteredBooks.forEach(async function (book) {
+    for(const book of filteredBooks) {
 
         const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
         card.classList.add("book-card", "book-added");
 
-        const coverURL = await getBookCover(book);
+        const coverURL = book.coverURL || null;
 
         card.innerHTML = `
             <div class="book-card-content">
@@ -392,8 +392,10 @@ function renderBooks() {
 			
 			<div class="series-info" id="series-${originalIndex}"></div>
 
-            <label>Status:</label>
-            <select onchange="changeStatus(${originalIndex}, this.value)">
+            <div class="quick-update-label">Quick Update</div>
+
+			<label>Status:</label>
+			<select onchange="changeStatus(${originalIndex}, this.value)">
                 <option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
                 <option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
                 <option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
@@ -402,8 +404,9 @@ function renderBooks() {
             <div class="book-actions">
 
             <div class="book-rating">
-            <strong>Rating:</strong>
-            ${renderStars(book.rating, originalIndex)}
+				<strong>Rating:</strong>
+				${renderStars(book.rating, originalIndex)}
+				${book.status !== "completed" ? `<div class="rating-note">Finish the book to rate it.</div>` : ""}
             </div>
 
             <div class="book-buttons">
@@ -433,7 +436,7 @@ function renderBooks() {
         bookList.appendChild(card);
 		renderSeriesInfo(book, originalIndex);
 
-    });
+    }
 	
     renderBookshelf();
 	renderCurrentlyReading();
@@ -445,6 +448,7 @@ function renderSeriesInfo(book, index){
     if(!book.series || book.series === "Standalone") return;
 
     const container = document.getElementById(`series-${index}`);
+	if(!container) return;
 
     const booksInSeries = books.filter(b => b.series === book.series);
 
@@ -476,7 +480,7 @@ function renderSeriesInfo(book, index){
         img.src = b.coverURL || "https://via.placeholder.com/50x75";
         img.classList.add("series-mini-book");
 
-        bookElement.onclick = () => {
+        img.onclick = () => {
 
 			// Clear search/filter/sort so the clicked book takes priority
 			searchInput.value = "";
@@ -502,7 +506,7 @@ function renderSeriesInfo(book, index){
 
 		};
 
-        shelf.appendChild(bookElement);
+        shelf.appendChild(img);
 
     });
 
@@ -512,32 +516,23 @@ function renderBookshelf(){
 
     const shelf = document.getElementById("bookshelfGrid");
     shelf.innerHTML = "";
+	
+	if(books.length === 0){
+		shelf.innerHTML = "<p style='opacity:0.6'>No books added yet.</p>";
+		return;
+	}
 
     books.forEach((book, index) => {
 
         let bookElement;
 
-        // If we have a cover → show image
         if(book.coverURL){
 
             bookElement = document.createElement("img");
             bookElement.src = book.coverURL;
 
-        } 
-        else {
+        } else {
 
-            // Try fetching a cover in the background
-            getBookCover(book).then((cover)=>{
-
-                if(cover){
-                    book.coverURL = cover;
-                    saveToStorage();
-                    renderBookshelf();
-                }
-
-            });
-
-            // Show text fallback
             bookElement = document.createElement("div");
             bookElement.classList.add("bookshelf-book-text");
 
@@ -545,11 +540,18 @@ function renderBookshelf(){
                 <div class="book-title">${book.title}</div>
                 <div class="book-author">${book.author || ""}</div>
             `;
+
+            // Fetch cover ONCE but DO NOT rerender shelf
+            getBookCover(book).then((cover)=>{
+                if(cover){
+                    book.coverURL = cover;
+                    saveToStorage();
+                }
+            });
         }
 
         bookElement.classList.add("bookshelf-book");
 
-        // Highlight same series
         if(selectedBookIndex !== null){
 
             const selectedSeries = books[selectedBookIndex].series;
@@ -560,7 +562,6 @@ function renderBookshelf(){
 
         }
 
-        // Highlight selected
         if(index === selectedBookIndex){
             bookElement.classList.add("selected-book");
         }
@@ -589,7 +590,11 @@ function renderBookshelf(){
             },150);
 
         };
-
+		
+		bookElement.title = `${book.title}
+		${book.author || "Unknown Author"}
+		${book.series ? `Series — ${book.series}` : "Standalone"}`;
+		
         shelf.appendChild(bookElement);
 
     });
@@ -599,36 +604,68 @@ function renderBookshelf(){
 function renderCurrentlyReading(){
 
     const container = document.getElementById("readingBooks");
-
-    if(!container) return;
-
     container.innerHTML = "";
 
     const readingBooks = books.filter(book => book.status === "reading");
 
-    if(readingBooks.length === 0){
-
-        container.innerHTML = `
-        <p style="opacity:0.6">
-        You are not currently reading any books.
-        </p>
-        `;
-
-        return;
-    }
-
     readingBooks.forEach(book => {
 
-        const div = document.createElement("div");
+        const index = books.indexOf(book);
 
-        div.classList.add("reading-book");
+        const item = document.createElement("div");
+        item.classList.add("reading-book");
 
-        div.innerHTML = `
-        <strong>${book.title}</strong><br>
-        <span>${book.author || ""}</span>
-        `;
+        if(book.coverURL){
 
-        container.appendChild(div);
+			item.innerHTML = `
+				<img 
+					src="${book.coverURL}"
+					class="reading-cover"
+				>
+
+				<div class="reading-text">
+					<div class="reading-title">${book.title}</div>
+					<div class="reading-author">${book.author || ""}</div>
+				</div>
+			`;
+
+		}else{
+
+			item.innerHTML = `
+				<div class="bookshelf-book-text">
+					<div class="book-title">${book.title}</div>
+					<div class="book-author">${book.author || ""}</div>
+				</div>
+
+				<div class="reading-text">
+					<div class="reading-title">${book.title}</div>
+					<div class="reading-author">${book.author || ""}</div>
+				</div>
+			`;
+		}
+
+        item.onclick = () => {
+
+            selectedBookIndex = index;
+
+            renderBooks();
+
+            setTimeout(() => {
+
+                const card = document.querySelector(".book-card");
+
+                if(card){
+                    card.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                }
+
+            },150);
+
+        };
+
+        container.appendChild(item);
 
     });
 
@@ -702,8 +739,6 @@ function editBook(index) {
 	}, 1200);
 	
 	document.querySelector(".add-book h2").textContent = "Edit Book";
-
-	showEditToast();
 }
 
 function showToast(message){
@@ -773,24 +808,25 @@ function undoDelete(){
 
 function renderStars(rating, index){
 
+    const book = books[index];
+    const isCompleted = book.status === "completed";
+
     let starsHTML = "";
 
     for(let i = 1; i <= 5; i++){
 
         starsHTML += `
         <span 
-            class="star"
+            class="star ${!isCompleted ? "star-disabled" : ""}"
             data-value="${i}"
-            onclick="setRating(${index}, ${i})"
+            ${isCompleted ? `onclick="setRating(${index}, ${i})"` : ""}
         >
             ${i <= rating ? "★" : "☆"}
         </span>
         `;
-
     }
 
     return starsHTML;
-
 }
 
 
@@ -881,4 +917,9 @@ function celebrateCompletion() {
 // INITIAL LOAD
 // ===============================
 
-renderBooks();
+document.addEventListener("DOMContentLoaded", function(){
+
+    renderBooks();
+    renderCurrentlyReading();
+
+});
