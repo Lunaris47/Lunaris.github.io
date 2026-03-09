@@ -769,10 +769,41 @@ body{
 .book-card input,
 .book-card select{
     width:100%;
-    padding:8px;
+    max-width:160px;
+    padding:6px 8px;
     margin-bottom:8px;
     border-radius:6px;
     border:1px solid #d8cbb5;
+    font-size:14px;
+}
+
+.book-card label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    margin-top:6px;
+    margin-bottom:3px;
+}
+
+.editing-banner{
+    font-size:12px;
+    font-weight:600;
+    color:#7a9e7e;
+    margin-bottom:10px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+.edit-mode{
+    display:none;
+}
+
+.book-card.editing .view-mode{
+    display:none;
+}
+
+.book-card.editing .edit-mode{
+    display:block;
 }
 
 /* ===============================

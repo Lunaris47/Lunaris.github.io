@@ -416,22 +416,30 @@ function renderBooks() {
 
             <div class="book-info">
 
-            <h3>${book.title}</h3>
+            <h3 class="view-mode">${book.title}</h3>
+			<input class="edit-mode edit-title" value="${book.title}">
 
-            <p><strong>Author:</strong> ${book.author || "Unknown"}</p>
-            <p><strong>Genre:</strong> ${book.genre || "N/A"}</p>
-            <p><strong>Series:</strong> ${book.series || "Standalone"}</p>
+            <p class="view-mode"><strong>Author:</strong> ${book.author || "Unknown"}</p>
+			<input class="edit-mode edit-author" value="${book.author || ""}">
+			
+            <p class="view-mode"><strong>Genre:</strong> ${book.genre || "N/A"}</p>
+			<input class="edit-mode edit-genre" value="${book.genre || ""}">
+			
+            <p class="view-mode"><strong>Series:</strong> ${book.series || "Standalone"}</p>
+			<input class="edit-mode edit-series" value="${book.series || ""}">
 			
 			<div class="series-info" id="series-${originalIndex}"></div>
 
             <div class="quick-update-label">Quick Update</div>
 
 			<label>Status:</label>
-			<select onchange="changeStatus(${originalIndex}, this.value)">
-                <option value="to-read" ${book.status === "to-read" ? "selected" : ""}>To Read</option>
-                <option value="reading" ${book.status === "reading" ? "selected" : ""}>Reading</option>
-                <option value="completed" ${book.status === "completed" ? "selected" : ""}>Completed</option>
-            </select>
+			<select class="edit-mode edit-status">
+				<option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
+				<option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
+				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
+			</select>
+
+			<p class="view-mode"><strong>Status:</strong> ${book.status}</p>
 
             <div class="book-actions">
 
@@ -447,9 +455,24 @@ function renderBooks() {
             </div>
 
             <div class="book-buttons">
-            <button onclick="enableInlineEdit(${originalIndex})">Edit</button>
-            <button onclick="deleteBook(${originalIndex})">Delete</button>
-            </div>
+
+				<button class="view-mode" onclick="startInlineEdit(${originalIndex})">
+				Edit
+				</button>
+
+				<button class="edit-mode" onclick="saveInlineEdit(${originalIndex})">
+				Save
+				</button>
+
+				<button class="edit-mode" onclick="cancelInlineEdit(${originalIndex})">
+				Cancel
+				</button>
+
+				<button onclick="deleteBook(${originalIndex})">
+				Delete
+				</button>
+
+			</div>
 
             </div>
 
@@ -962,51 +985,49 @@ function undoDelete(){
 
 function enableInlineEdit(index){
 
-    const book = books[index];
-    const card = document.getElementById(`book-${index}`);
+	const book = books[index];
+	const card = document.getElementById(`book-${index}`);
 
-    card.innerHTML = `
-        <div class="book-card-content">
+	card.innerHTML = `
 
-            <div class="book-info">
+		<div class="editing-banner">✏️ EDITING BOOK</div>
 
-                <label>Title</label>
-                <input id="edit-title-${index}" value="${book.title}">
+		<label>Title</label>
+			<input id="edit-title-${index}" value="${book.title}">
 
-                <label>Author</label>
-                <input id="edit-author-${index}" value="${book.author || ""}">
+		<label>Author</label>
+			<input id="edit-author-${index}" value="${book.author || ""}">
 
-                <label>Genre</label>
-                <input id="edit-genre-${index}" value="${book.genre || ""}">
+		<label>Genre</label>
+			<input id="edit-genre-${index}" value="${book.genre || ""}">
 
-                <label>Series</label>
-                <input id="edit-series-${index}" value="${book.series || ""}">
+		<label>Series</label>
+			<input id="edit-series-${index}" value="${book.series || ""}">
 
-                <label>Status</label>
-                <select id="edit-status-${index}">
-                    <option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
-                    <option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
-                    <option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
-                </select>
+		<label>Status</label>
+			<select id="edit-status-${index}">
+				<option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
+				<option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
+				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
+			</select>
 
-                <div class="book-buttons">
-                    <button onclick="saveInlineEdit(${index})">Save</button>
-                    <button onclick="renderBooks()">Cancel</button>
-                </div>
+		<div class="book-buttons">
+			<button onclick="saveInlineEdit(${index})">Save</button>
+			<button onclick="renderBooks()">Cancel</button>
+		</div>
 
-            </div>
-
-        </div>
-    `;
+	`;
 }
 
 function saveInlineEdit(index){
 
-    const title = document.getElementById(`edit-title-${index}`).value.trim();
-    const author = document.getElementById(`edit-author-${index}`).value.trim();
-    const genre = document.getElementById(`edit-genre-${index}`).value.trim();
-    const series = document.getElementById(`edit-series-${index}`).value.trim();
-    const status = document.getElementById(`edit-status-${index}`).value;
+    const card = document.getElementById(`book-${index}`);
+
+    const title = card.querySelector(".edit-title").value.trim();
+    const author = card.querySelector(".edit-author").value.trim();
+    const genre = card.querySelector(".edit-genre").value.trim();
+    const series = card.querySelector(".edit-series").value.trim();
+    const status = card.querySelector(".edit-status").value;
 
     if(title === ""){
         showToast("Please enter a title.");
@@ -1017,17 +1038,31 @@ function saveInlineEdit(index){
     books[index].author = author;
     books[index].genre = genre;
     books[index].series = series;
+    books[index].status = status;
 
     if(status !== "completed"){
         books[index].rating = 0;
     }
 
-    books[index].status = status;
-
     saveToStorage();
     renderBooks();
 
     showToast("Book updated successfully.");
+
+}
+
+function startInlineEdit(index){
+
+    const card = document.getElementById(`book-${index}`);
+
+    card.classList.add("editing");
+
+}
+
+function cancelInlineEdit(index){
+
+    renderBooks();
+
 }
 
 
