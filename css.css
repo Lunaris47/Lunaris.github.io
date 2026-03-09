@@ -489,14 +489,19 @@ input:focus{
 
 /* Star feedback styling */
 .star{
-	cursor:pointer;
-	font-size:22px;
-	transition:transform .1s ease, color .1s ease;
+    cursor:pointer;
+    font-size:22px;
+    transition:transform .1s ease, color .1s ease;
 }
 
 .star:hover{
-	transform:scale(1.2);
-	color:#f5b301;
+    transform:scale(1.2);
+}
+
+/* highlight hovered star and those before it */
+.star:hover,
+.star:hover ~ .star{
+    color:#f5b301;
 }
 
 /* Undo deletion feedback styling */

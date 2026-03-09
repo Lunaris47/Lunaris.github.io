@@ -24,6 +24,8 @@ const clearResultsBtn = document.getElementById("clearResults");
 const deleteModal = document.getElementById("deleteModal");
 const confirmDeleteBtn = document.getElementById("confirmDelete");
 const cancelDeleteBtn = document.getElementById("cancelDelete");
+const statusInput = document.getElementById("statusInput");
+const ratingInput = document.getElementById("ratingInput");
 
 let bookToDeleteIndex = null;
 
@@ -187,6 +189,15 @@ cancelEditBtn.addEventListener("click", function(){
     editingIndex = null;
 
     showToast("Edit canceled.");
+
+});
+
+statusInput.addEventListener("change", function(){
+
+    if(statusInput.value !== "completed"){
+        ratingInput.value = "0";
+        showToast("⭐ Ratings are only allowed for completed books.");
+    }
 
 });
 
@@ -426,7 +437,12 @@ function renderBooks() {
             <div class="book-rating">
 				<strong>Rating:</strong>
 				${renderStars(book.rating, originalIndex)}
-				${book.status !== "completed" ? `<div class="rating-note">Finish the book to rate it.</div>` : ""}
+				${book.status === "completed" && book.rating === 0 
+					? `<div class="rating-note">Not rated yet</div>` 
+					: ""}
+				${book.status !== "completed" 
+				? `<div class="rating-note">Finish the book to rate it.</div>` 
+				: ""}
             </div>
 
             <div class="book-buttons">
@@ -472,13 +488,15 @@ function renderSeriesInfo(book, index){
 
     const booksInSeries = books.filter(b => b.series === book.series);
 
-    const completedBooks = booksInSeries.filter(b => b.status === "completed");
+    const completedBooks = booksInSeries.filter(b => 
+		b.status === "completed" && b.rating > 0
+	);
 
 	let avgRating = 0;
 
 	if(completedBooks.length > 0){
 		avgRating =
-			completedBooks.reduce((sum,b)=>sum+b.rating,0) /
+			completedBooks.reduce((sum, b) => sum + b.rating, 0) /
 			completedBooks.length;
 	}
 
@@ -817,10 +835,17 @@ function deleteBook(index){
 }
 
 function changeStatus(index, newStatus) {
+
     books[index].status = newStatus;
+
+    // Reset rating if book is no longer completed
+    if(newStatus !== "completed"){
+        books[index].rating = 0;
+    }
+
     saveToStorage();
 
-    if (newStatus === "completed") {
+    if(newStatus === "completed"){
         celebrateCompletion();
     }
 
@@ -949,17 +974,31 @@ function renderStars(rating, index){
     for(let i = 1; i <= 5; i++){
 
         starsHTML += `
-        <span 
-            class="star ${!isCompleted ? "star-disabled" : ""}"
-            data-value="${i}"
-            ${isCompleted ? `onclick="setRating(${index}, ${i})"` : ""}
-        >
-            ${i <= rating ? "★" : "☆"}
-        </span>
-        `;
+		<span 
+			class="star ${!isCompleted ? "star-disabled" : ""}"
+			data-value="${i}"
+			${isCompleted ? `
+				onclick="setRating(${index}, ${i})"
+				onmouseover="previewRating(${index}, ${i})"
+				onmouseleave="renderBooks()"
+			` : ""}
+		>
+		${i <= rating ? "★" : "☆"}
+		</span>
+		`;
     }
 
     return starsHTML;
+}
+
+function previewRating(index, rating){
+
+    const stars = document.querySelectorAll(".star");
+
+    stars.forEach((star,i) => {
+        star.textContent = i < rating ? "★" : "☆";
+    });
+
 }
 
 
