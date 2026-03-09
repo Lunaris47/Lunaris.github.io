@@ -11,7 +11,7 @@ This repository contains the source code and documentation for my Human-Computer
 ## 🖥️ Technologies Used
 - HTML
 - CSS
-- JavaScript (if applicable)
+- JavaScript
 - GitHub Pages (if deployed)
 
 ## 📐 Design Principles
