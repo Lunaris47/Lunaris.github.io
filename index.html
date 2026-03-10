@@ -1,157 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cozy Book Log</title>
 
-    <link rel="stylesheet" href="css.css">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Cozy Book Log</title>
+
+<link rel="stylesheet" href="css.css">
+
 </head>
+
 <body>
 
-    <!-- Header -->
-    <header>
-        <h1>📚 Cozy Book Log</h1>
-        <p>Track your reading journey</p>
-    </header>
-	
-	<div class="reading-stats">
-		<div class="stat">📚 To Read: <span id="toReadCount">0</span></div>
-		<div class="stat">📖 Reading: <span id="readingCount">0</span></div>
-		<div class="stat">✅ Finished: <span id="finishedCount">0</span></div>
-	</div>
-
-    <div class="app-layout">
-
-	<div class="left-panel">
-
-    <!-- Add Book Panel -->
-    <div class="panel add-book">
-        <h2>Add a New Book</h2>
-
-        <input type="text" id="titleInput" placeholder="Title">
-        <input type="text" id="authorInput" placeholder="Author">
-        <input type="text" id="genreInput" placeholder="Genre">
-        <input type="text" id="seriesInput" placeholder="Series">
-
-        <div class="form-row">
-
-		<select id="statusInput">
-			<option value="to-read">To Read</option>
-			<option value="reading">Reading</option>
-			<option value="completed">Completed</option>
-		</select>
-
-		<select id="ratingInput">
-			<option value="0">No rating</option>
-			<option value="1">★☆☆☆☆</option>
-			<option value="2">★★☆☆☆</option>
-			<option value="3">★★★☆☆</option>
-			<option value="4">★★★★☆</option>
-			<option value="5">★★★★★</option>
-		</select>
-
-	</div>
-
-        <div class="form-row">
-			<button id="addBookBtn">Add Book</button>
-			<button id="cancelEditBtn" style="display:none;">Cancel</button>
-		</div>
-		
-    </div>
+<header>
+<h1>📚 Cozy Book Log</h1>
+<p>Track your reading journey</p>
+</header>
 
 
-    <!-- Search / Sort / Filter Panel -->
-    <div class="panel controls-panel">
+<div class="reading-stats">
 
-        <h2>Find Books</h2>
-
-        <div class="search-bar">
-
-			<input 
-				type="text" 
-				id="searchInput" 
-				placeholder="Search by title, author, or series"
-			>
-
-		</div>
-
-		<select id="sortSelect">
-            <option value="">Sort by</option>
-            <option value="title">Title</option>
-            <option value="author">Author</option>
-			<option value="genre">Genre</option>
-            <option value="rating">Rating</option>
-        </select>
-
-        <select id="filterSelect">
-            <option value="">Filter by status</option>
-            <option value="to-read">To Read</option>
-            <option value="reading">Reading</option>
-            <option value="completed">Completed</option>
-        </select>
-		
-		<div class="search-actions">
-			<button id="searchBtn">Search</button>
-			<button id="clearResults">Reset View</button>
-		</div>
-
-    </div>
-	
-	<div class="currently-reading panel">
-
-		<h2>Currently Reading</h2>
-
-		<div id="readingBooks"></div>
-
-	</div>
-	
-	<div class="finished-reading panel">
-
-		<h2>Finished Reading</h2>
-
-		<div id="finishedBooks"></div>
-
-	</div>
+<div class="stat">📚 To Read: <span id="toReadCount">0</span></div>
+<div class="stat">📖 Reading: <span id="readingCount">0</span></div>
+<div class="stat">✅ Finished: <span id="finishedCount">0</span></div>
 
 </div>
 
-	<div class="right-panel">
 
-		<section class="bookshelf">
-			<h2>📚 My Bookshelf</h2>
-			<div id="bookshelfGrid"></div>
-		</section>
+<main class="app-layout">
 
-		<!-- Book List -->
-		<section class="library">
-			<h2>Your Library</h2>
-			<p id="libraryStatus"></p>
 
-			<div id="bookList">
-				<!-- Book cards will go here -->
-			</div>
-		</section>
-	
-	</div>
-	
-	</div>
+<!-- LEFT PANEL -->
 
-	<div id="toast" class="toast"></div>
-	
-	<div id="deleteModal" class="modal">
-		<div class="modal-content">
-			<p>Are you sure you want to delete this book?</p>
+<div class="left-panel">
 
-			<div class="modal-buttons">
-				<button id="confirmDelete">Delete</button>
-				<button id="cancelDelete">Cancel</button>
-			</div>
-		</div>
-	</div>
-	
-	<button id="backToTop">⬆ Top</button>
 
-    <script src="js.js"></script>
+<div class="panel add-book">
+
+<h2>Add a New Book</h2>
+
+<input id="titleInput" type="text" placeholder="Title">
+<input id="authorInput" type="text" placeholder="Author">
+<input id="genreInput" type="text" placeholder="Genre">
+<input id="seriesInput" type="text" placeholder="Series">
+
+<div class="form-row">
+
+<select id="statusInput">
+
+<option value="to-read">To Read</option>
+<option value="reading">Reading</option>
+<option value="completed">Completed</option>
+
+</select>
+
+<select id="ratingInput">
+
+<option value="0">No rating</option>
+<option value="1">★☆☆☆☆</option>
+<option value="2">★★☆☆☆</option>
+<option value="3">★★★☆☆</option>
+<option value="4">★★★★☆</option>
+<option value="5">★★★★★</option>
+
+</select>
+
+</div>
+
+<div class="form-row">
+
+<button id="addBookBtn">Add Book</button>
+<button id="cancelEditBtn" style="display:none;">Cancel</button>
+
+</div>
+
+</div>
+
+
+
+<div class="panel">
+
+<h2>Find Books</h2>
+
+<div class="search-bar">
+
+<input id="searchInput" type="text" placeholder="Search by title, author, or series">
+
+</div>
+
+<select id="sortSelect">
+
+<option value="">Sort by</option>
+<option value="title">Title</option>
+<option value="author">Author</option>
+<option value="genre">Genre</option>
+<option value="rating">Rating</option>
+
+</select>
+
+<select id="filterSelect">
+
+<option value="">Filter by status</option>
+<option value="to-read">To Read</option>
+<option value="reading">Reading</option>
+<option value="completed">Completed</option>
+
+</select>
+
+<div class="search-actions">
+
+<button id="searchBtn">Search</button>
+<button id="clearResults">Reset View</button>
+
+</div>
+
+</div>
+
+
+
+<div class="panel">
+
+<h2>Currently Reading</h2>
+<div id="readingBooks"></div>
+
+</div>
+
+
+
+<div class="panel">
+
+<h2>Finished Reading</h2>
+<div id="finishedBooks"></div>
+
+</div>
+
+
+</div>
+
+
+
+<!-- RIGHT PANEL -->
+
+<div class="right-panel">
+
+
+<div class="bookshelf">
+
+<h2>📚 My Bookshelf</h2>
+<div id="bookshelfGrid"></div>
+
+</div>
+
+
+<div class="library">
+
+<h2>Your Library</h2>
+
+<p id="libraryStatus"></p>
+
+<div id="bookList"></div>
+
+</div>
+
+
+</div>
+
+
+</main>
+
+
+
+<div id="toast" class="toast"></div>
+
+
+<div id="deleteModal" class="modal">
+
+<div class="modal-content">
+
+<p>Are you sure you want to delete this book?</p>
+
+<div class="modal-buttons">
+
+<button id="confirmDelete">Delete</button>
+<button id="cancelDelete">Cancel</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<button id="backToTop">⬆ Top</button>
+
+
+<script src="js.js"></script>
+
 </body>
 </html>
