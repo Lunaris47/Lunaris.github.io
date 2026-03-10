@@ -3,7 +3,6 @@
 // ===============================
 
 let books = JSON.parse(localStorage.getItem("books")) || [];
-let editingIndex = null;
 let selectedBookIndex = null;
 let recentlyDeletedBook = null;
 let recentlyDeletedIndex = null;
@@ -14,7 +13,6 @@ let undoTimer = null;
 // DOM ELEMENTS
 // ===============================
 
-const cancelEditBtn = document.getElementById("cancelEditBtn");
 const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -36,7 +34,6 @@ let bookToDeleteIndex = null;
 
 searchInput.addEventListener("input", renderBooks);
 sortSelect.addEventListener("change", renderBooks);
-filterSelect.addEventListener("change", renderBooks);
 
 addBookBtn.addEventListener("click", function () {
 
@@ -66,48 +63,6 @@ addBookBtn.addEventListener("click", function () {
         status,
         rating
     };
-
-    // ===============================
-    // EDIT EXISTING BOOK
-    // ===============================
-    if(editingIndex !== null){
-
-		getBookCover(book).then((cover)=>{
-
-			book.coverURL = cover;
-
-			books[editingIndex] = book;
-
-			const editedIndex = editingIndex;
-
-			selectedBookIndex = editedIndex;   // ⭐ show the edited book in the library
-
-			saveToStorage();
-			renderBooks();
-
-			showToast("✏️ Book updated successfully.");
-
-			editingIndex = null;
-			addBookBtn.textContent = "Add Book";
-			clearForm();
-
-			setTimeout(() => {
-
-				const card = document.querySelector(".book-card");
-
-				if(card){
-					card.scrollIntoView({
-						behavior: "smooth",
-						block: "center"
-					});
-				}
-
-			}, 150);
-
-		});
-
-		return;
-	}
 
     // ===============================
     // PREVENT DUPLICATE TITLES
@@ -182,16 +137,6 @@ searchInput.addEventListener("keydown", function(event){
 
 });
 
-cancelEditBtn.addEventListener("click", function(){
-
-    clearForm();
-
-    editingIndex = null;
-
-    showToast("Edit canceled.");
-
-});
-
 statusInput.addEventListener("change", function(){
 
     if(statusInput.value !== "completed"){
@@ -219,7 +164,6 @@ function clearForm() {
 	
 	document.querySelector(".add-book h2").textContent = "Add a New Book";
 	
-	cancelEditBtn.stlye.display = "none";
 }
 
 function saveToStorage() {
@@ -387,8 +331,8 @@ function renderBooks() {
         `;
 
         renderBookshelf();
-        renderCurrentlyReading();
-		renderFinishedReading();
+        renderBookSection("readingBooks", "reading");
+		renderBookSection("finishedBooks", "completed");
 		renderReadingStats();
         return;
     }
@@ -416,17 +360,34 @@ function renderBooks() {
 
             <div class="book-info">
 
-            <h3 class="view-mode">${book.title}</h3>
-			<input class="edit-mode edit-title" value="${book.title}">
+            <h3>
+				<span id="title-${originalIndex}">${book.title}</span>
+				<button class="edit-icon" onclick="editField(${originalIndex}, 'title')">✏️</button>
+			</h3>
 
-            <p class="view-mode"><strong>Author:</strong> ${book.author || "Unknown"}</p>
-			<input class="edit-mode edit-author" value="${book.author || ""}">
+            <p>
+				<strong>Author:</strong>
+				<span id="author-${originalIndex}">${book.author || "Unknown"}</span>
+				<button class="edit-icon" onclick="editField(${originalIndex}, 'author')">✏️</button>
+			</p>
 			
-            <p class="view-mode"><strong>Genre:</strong> ${book.genre || "N/A"}</p>
-			<input class="edit-mode edit-genre" value="${book.genre || ""}">
+            <p>
+				<strong>Genre:</strong>
+				<span id="genre-${originalIndex}">${book.genre || "N/A"}</span>
+				<button class="edit-icon" onclick="editField(${originalIndex}, 'genre')">✏️</button>
+			</p>
 			
-            <p class="view-mode"><strong>Series:</strong> ${book.series || "Standalone"}</p>
-			<input class="edit-mode edit-series" value="${book.series || ""}">
+            <p>
+				<strong>Series:</strong>
+				<span id="series-${originalIndex}">
+					${book.series || "Standalone"}
+				</span>
+				<button class="edit-icon"
+					onclick="editField(${originalIndex}, 'series')"
+					title="Edit series">
+					✏️
+				</button>
+			</p>
 			
 			<div class="series-info" id="series-${originalIndex}"></div>
 
@@ -499,7 +460,7 @@ function renderBooks() {
     }
 	
     renderBookshelf();
-	renderCurrentlyReading();
+	renderBookSection("readingBooks", "reading");
 
 }
 
@@ -692,84 +653,14 @@ ${book.series ? `Series — ${book.series}` : "Standalone"}`;
 
 }
 
-function renderCurrentlyReading(){
+function renderBookSection(containerId, status){
 
-    const container = document.getElementById("readingBooks");
+    const container = document.getElementById(containerId);
     container.innerHTML = "";
 
-    const readingBooks = books.filter(book => book.status === "reading");
+    const filteredBooks = books.filter(book => book.status === status);
 
-    readingBooks.forEach(book => {
-
-        const index = books.indexOf(book);
-
-        const item = document.createElement("div");
-        item.classList.add("reading-book");
-
-        if(book.coverURL){
-
-			item.innerHTML = `
-				<img 
-					src="${book.coverURL}"
-					class="reading-cover"
-				>
-
-				<div class="reading-text">
-					<div class="reading-title">${book.title}</div>
-					<div class="reading-author">${book.author || ""}</div>
-				</div>
-			`;
-
-		}else{
-
-			item.innerHTML = `
-				<div class="bookshelf-book-text">
-					<div class="book-title">${book.title}</div>
-					<div class="book-author">${book.author || ""}</div>
-				</div>
-
-				<div class="reading-text">
-					<div class="reading-title">${book.title}</div>
-					<div class="reading-author">${book.author || ""}</div>
-				</div>
-			`;
-		}
-
-        item.onclick = () => {
-
-            selectedBookIndex = index;
-
-            renderBooks();
-
-            setTimeout(() => {
-
-                const card = document.querySelector(".book-card");
-
-                if(card){
-                    card.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center"
-                    });
-                }
-
-            },150);
-
-        };
-
-        container.appendChild(item);
-
-    });
-
-}
-
-function renderFinishedReading(){
-
-    const container = document.getElementById("finishedBooks");
-    container.innerHTML = "";
-
-    const finishedBooks = books.filter(book => book.status === "completed");
-
-    finishedBooks.forEach(book => {
+    filteredBooks.forEach(book => {
 
         const index = books.indexOf(book);
 
@@ -779,10 +670,7 @@ function renderFinishedReading(){
         if(book.coverURL){
 
             item.innerHTML = `
-                <img 
-                    src="${book.coverURL}"
-                    class="reading-cover"
-                >
+                <img src="${book.coverURL}" class="reading-cover">
 
                 <div class="reading-text">
                     <div class="reading-title">${book.title}</div>
@@ -790,7 +678,7 @@ function renderFinishedReading(){
                 </div>
             `;
 
-        }else{
+        } else {
 
             item.innerHTML = `
                 <div class="bookshelf-book-text">
@@ -803,7 +691,6 @@ function renderFinishedReading(){
                     <div class="reading-author">${book.author || ""}</div>
                 </div>
             `;
-
         }
 
         item.onclick = () => {
@@ -890,39 +777,6 @@ function setRating(index, rating){
 
 }
 
-function editBook(index) {
-
-    const book = books[index];
-
-    document.getElementById("titleInput").value = book.title;
-    document.getElementById("authorInput").value = book.author;
-    document.getElementById("genreInput").value = book.genre;
-    document.getElementById("seriesInput").value = book.series;
-    document.getElementById("statusInput").value = book.status;
-    document.getElementById("ratingInput").value = book.rating;
-
-    editingIndex = index;
-
-    addBookBtn.textContent = "Save Changes";
-	cancelEditBtn.style.display = "inline-block";
-	
-	// Scroll to the Form
-	document.querySelector(".add-book").scrollIntoView({
-		behavior: "smooth"
-	});
-	
-	// Highlight the form
-	const form = document.querySelector(".add-book");
-	
-	form.classList.add("edit-highlight");
-	
-	setTimeout(() => {
-		form.classList.remove("edit-highlight");
-	}, 1200);
-	
-	document.querySelector(".add-book h2").textContent = "Edit Book";
-}
-
 function showToast(message){
 
     const toast = document.getElementById("toast");
@@ -983,85 +837,47 @@ function undoDelete(){
 
 }
 
-function enableInlineEdit(index){
+function editField(index, field){
 
-	const book = books[index];
-	const card = document.getElementById(`book-${index}`);
+    const span = document.getElementById(`${field}-${index}`);
+    const currentValue = span.textContent;
 
-	card.innerHTML = `
+    span.dataset.original = currentValue;
 
-		<div class="editing-banner">✏️ EDITING BOOK</div>
+    span.innerHTML = `
+        <input id="input-${field}-${index}" value="${currentValue}">
+        <button class="confirm-btn" onclick="saveField(${index}, '${field}')">✓</button>
+        <button class="cancel-btn" onclick="cancelField(${index}, '${field}')">✖</button>
+    `;
 
-		<label>Title</label>
-			<input id="edit-title-${index}" value="${book.title}">
-
-		<label>Author</label>
-			<input id="edit-author-${index}" value="${book.author || ""}">
-
-		<label>Genre</label>
-			<input id="edit-genre-${index}" value="${book.genre || ""}">
-
-		<label>Series</label>
-			<input id="edit-series-${index}" value="${book.series || ""}">
-
-		<label>Status</label>
-			<select id="edit-status-${index}">
-				<option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
-				<option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
-				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
-			</select>
-
-		<div class="book-buttons">
-			<button onclick="saveInlineEdit(${index})">Save</button>
-			<button onclick="renderBooks()">Cancel</button>
-		</div>
-
-	`;
 }
 
-function saveInlineEdit(index){
+function saveField(index, field){
 
-    const card = document.getElementById(`book-${index}`);
+    const input = document.getElementById(`input-${field}-${index}`);
 
-    const title = card.querySelector(".edit-title").value.trim();
-    const author = card.querySelector(".edit-author").value.trim();
-    const genre = card.querySelector(".edit-genre").value.trim();
-    const series = card.querySelector(".edit-series").value.trim();
-    const status = card.querySelector(".edit-status").value;
+    let value = input.value.trim();
 
-    if(title === ""){
-        showToast("Please enter a title.");
+    if(field === "title" && value === ""){
+        showToast("Title cannot be empty.");
         return;
     }
 
-    books[index].title = title;
-    books[index].author = author;
-    books[index].genre = genre;
-    books[index].series = series;
-    books[index].status = status;
-
-    if(status !== "completed"){
-        books[index].rating = 0;
-    }
+    books[index][field] = value;
 
     saveToStorage();
     renderBooks();
 
-    showToast("Book updated successfully.");
+    showToast("Field updated.");
 
 }
 
-function startInlineEdit(index){
+function cancelField(index, field){
 
-    const card = document.getElementById(`book-${index}`);
+    const span = document.getElementById(`${field}-${index}`);
+    const original = span.dataset.original;
 
-    card.classList.add("editing");
-
-}
-
-function cancelInlineEdit(index){
-
-    renderBooks();
+    span.textContent = original;
 
 }
 
@@ -1209,8 +1025,8 @@ function celebrateCompletion() {
 document.addEventListener("DOMContentLoaded", function(){
 
     renderBooks();
-    renderCurrentlyReading();
-	renderFinishedReading();
+    renderBookSection("readingBooks", "reading");
+	renderBookSection("finishedBooks", "completed");
 	renderReadingStats();
 
 });
