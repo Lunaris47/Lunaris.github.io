@@ -189,6 +189,8 @@ header p{
 
 .book-info{
     flex:1;
+	flex-direction:columnl
+	gap:6px;
 }
 
 .book-cover{
@@ -275,13 +277,13 @@ header p{
     background:none;
     border:none;
     cursor:pointer;
-    font-size:13px;
-    margin-left:6px;
-    opacity:0;
+    font-size:14px;
+    opacity:0.25;
+    transition:opacity .15s ease;
 }
 
 .book-card:hover .edit-icon{
-    opacity:.6;
+    opacity:1;
 }
 
 .confirm-btn,
@@ -290,15 +292,25 @@ header p{
     border:none;
     background:none;
     cursor:pointer;
+    font-size:16px;
 }
 
-.confirm-btn{color:#4caf50;}
-.cancel-btn{color:#c97c5d;}
+.confirm-btn{
+    color:#4caf50;
+}
+
+.cancel-btn{
+    color:#c97c5d;
+}
 
 .edit-mode{display:none;}
 
 .book-card.editing .view-mode{display:none;}
 .book-card.editing .edit-mode{display:block;}
+
+.book-card.editing .edit-icon{
+    display:none;
+}
 
 .book-card input,
 .book-card select{
@@ -437,6 +449,80 @@ header p{
     background:#f5efe5;
     border-bottom:2px solid #d3c2a3;
     font-weight:600;
+}
+
+
+/* ===============================
+   SERIES MINI BOOK
+=============================== */
+
+.series-books{
+    display:flex;
+    gap:6px;
+    margin-top:6px;
+}
+
+.series-mini-book{
+    width:36px;
+    height:54px;
+    object-fit:cover;
+    border-radius:3px;
+    cursor:pointer;
+    transition:transform .15s ease;
+}
+
+.series-mini-book:hover{
+    transform:translateY(-2px);
+}
+
+.series-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+
+/* ===============================
+   COZY BUTTONS
+=============================== */
+
+button{
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    font-weight:500;
+}
+
+/* Primary actions */
+#addBookBtn,
+#searchBtn{
+    background:#7a9e7e;
+    color:white;
+}
+
+#addBookBtn:hover,
+#searchBtn:hover{
+    background:#5f8262;
+}
+
+/* Secondary actions */
+#clearResults{
+    background:#c97c5d;
+    color:white;
+}
+
+#clearResults:hover{
+    background:#a65f45;
+}
+
+/* Delete button */
+.book-buttons button{
+    background:#d27c63;
+    color:white;
+}
+
+.book-buttons button:hover{
+    background:#b7654e;
 }
 
 

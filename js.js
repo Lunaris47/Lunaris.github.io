@@ -68,7 +68,7 @@ addBookBtn.addEventListener("click", function () {
     // PREVENT DUPLICATE TITLES
     // ===============================
     const duplicateTitle = books.some((existing, index) =>
-		index !== editingIndex &&
+		true &&
 		existing.title.trim().toLowerCase() === title.toLowerCase()
 	);
 
@@ -83,7 +83,7 @@ addBookBtn.addEventListener("click", function () {
     getBookCover(book).then((cover)=>{
 
         const duplicateCover = books.some((existing, index) =>
-			index !== editingIndex &&
+			true &&
 			existing.coverURL &&
 			existing.coverURL === cover
 		);
@@ -159,7 +159,6 @@ function clearForm() {
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
 	
-	editingIndex = null;
 	addBookBtn.textContent = "Add Book";
 	
 	document.querySelector(".add-book h2").textContent = "Add a New Book";
@@ -350,7 +349,7 @@ function renderBooks() {
         const originalIndex = books.indexOf(book);
 
         const card = document.createElement("div");
-		card.classList.add("book-card", "book-added");
+		card.classList.add("book-card");
 		card.id = `book-${originalIndex}`;
 
         const coverURL = book.coverURL || null;
@@ -377,24 +376,26 @@ function renderBooks() {
 				<button class="edit-icon" onclick="editField(${originalIndex}, 'genre')">✏️</button>
 			</p>
 			
-            <p>
-				<strong>Series:</strong>
-				<span id="series-${originalIndex}">
-					${book.series || "Standalone"}
-				</span>
-				<button class="edit-icon"
-					onclick="editField(${originalIndex}, 'series')"
-					title="Edit series">
-					✏️
-				</button>
+            <p class="series-row">
+			<strong>Series:</strong>
+
+			<span id="series-name-${originalIndex}">
+			${book.series || "Standalone"}
+			</span>
+
+			<button class="edit-icon"
+			onclick="editField(${originalIndex}, 'series')">
+			✏️
+			</button>
 			</p>
-			
-			<div class="series-info" id="series-${originalIndex}"></div>
+
+			<div class="series-info" id="series-info-${originalIndex}"></div>
 
             <div class="quick-update-label">Quick Update</div>
 
 			<label>Status:</label>
-			<select class="edit-mode edit-status">
+
+			<select onchange="changeStatus(${originalIndex}, this.value)">
 				<option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
 				<option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
 				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
@@ -416,10 +417,6 @@ function renderBooks() {
             </div>
 
             <div class="book-buttons">
-
-				<button class="view-mode" onclick="startInlineEdit(${originalIndex})">
-				Edit
-				</button>
 
 				<button class="edit-mode" onclick="saveInlineEdit(${originalIndex})">
 				Save
@@ -468,7 +465,7 @@ function renderSeriesInfo(book, index){
 
     if(!book.series || book.series === "Standalone") return;
 
-    const container = document.getElementById(`series-${index}`);
+    const container = document.getElementById(`series-info-${index}`);
 	if(!container) return;
 
     const booksInSeries = books.filter(b => b.series === book.series);
@@ -839,7 +836,14 @@ function undoDelete(){
 
 function editField(index, field){
 
-    const span = document.getElementById(`${field}-${index}`);
+    const span = document.getElementById(`${field === "series" ? "series-name" : field}-${index}`);
+    const row = span.parentElement;
+    const editBtn = row.querySelector(".edit-icon");
+
+    if(editBtn){
+        editBtn.style.display = "none";
+    }
+
     const currentValue = span.textContent;
 
     span.dataset.original = currentValue;
@@ -850,13 +854,16 @@ function editField(index, field){
         <button class="cancel-btn" onclick="cancelField(${index}, '${field}')">✖</button>
     `;
 
+    if(field === "series"){
+        const info = document.getElementById(`series-info-${index}`);
+        if(info) info.style.display = "none";
+    }
 }
 
 function saveField(index, field){
 
     const input = document.getElementById(`input-${field}-${index}`);
-
-    let value = input.value.trim();
+    const value = input.value.trim();
 
     if(field === "title" && value === ""){
         showToast("Title cannot be empty.");
@@ -869,15 +876,11 @@ function saveField(index, field){
     renderBooks();
 
     showToast("Field updated.");
-
 }
 
 function cancelField(index, field){
 
-    const span = document.getElementById(`${field}-${index}`);
-    const original = span.dataset.original;
-
-    span.textContent = original;
+    renderBooks();
 
 }
 
