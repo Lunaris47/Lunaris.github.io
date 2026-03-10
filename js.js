@@ -24,6 +24,11 @@ const confirmDeleteBtn = document.getElementById("confirmDelete");
 const cancelDeleteBtn = document.getElementById("cancelDelete");
 const statusInput = document.getElementById("statusInput");
 const ratingInput = document.getElementById("ratingInput");
+const titleInput = document.getElementById("titleInput");
+const authorInput = document.getElementById("authorInput");
+const genreInput = document.getElementById("genreInput");
+const seriesInput = document.getElementById("seriesInput");
+const titleWarning = document.getElementById("titleWarning");
 
 let bookToDeleteIndex = null;
 
@@ -35,9 +40,13 @@ let bookToDeleteIndex = null;
 searchInput.addEventListener("input", renderBooks);
 sortSelect.addEventListener("change", renderBooks);
 
+titleInput.addEventListener("input", function(){
+    document.getElementById("titleWarning").textContent = "";
+});
+
 addBookBtn.addEventListener("click", function () {
 
-    const title = document.getElementById("titleInput").value.trim();
+    const title = titleInput.value.trim();
     const author = document.getElementById("authorInput").value.trim();
     const genre = document.getElementById("genreInput").value;
     const series = document.getElementById("seriesInput").value;
@@ -50,10 +59,15 @@ addBookBtn.addEventListener("click", function () {
 		return;
 	}
 
-    if(title === ""){
-        alert("Please enter a title.");
-        return;
-    }
+    const titleWarning = document.getElementById("titleWarning");
+
+	if(title === ""){
+		titleWarning.textContent = "⚠ Please enter a title before adding a book.";
+		titleInput.classList.add("input-error");
+		return;
+	}
+	
+	titleInput.classList.remove("input-error");
 
     const book = {
         title,
@@ -68,8 +82,7 @@ addBookBtn.addEventListener("click", function () {
     // PREVENT DUPLICATE TITLES
     // ===============================
     const duplicateTitle = books.some((existing, index) =>
-		true &&
-		existing.title.trim().toLowerCase() === title.toLowerCase()
+		existing => existing.title.trim().toLowerCase() === title.toLowerCase()
 	);
 
     if(duplicateTitle){
@@ -82,10 +95,8 @@ addBookBtn.addEventListener("click", function () {
     // ===============================
     getBookCover(book).then((cover)=>{
 
-        const duplicateCover = books.some((existing, index) =>
-			true &&
-			existing.coverURL &&
-			existing.coverURL === cover
+        const duplicateCover = books.some(
+			existing => existing.coverURL && existing.coverURL === cover
 		);
 
         if(duplicateCover){
@@ -115,16 +126,12 @@ filterSelect.addEventListener("change", function(){
 	
 });
 
-clearResultsBtn.addEventListener("click", function(){
-
+clearResultsBtn.addEventListener("click", () => {
     searchInput.value = "";
     sortSelect.value = "";
     filterSelect.value = "";
-
     selectedBookIndex = null;
-
     renderBooks();
-
 });
 
 searchBtn.addEventListener("click", runSearch);
@@ -152,10 +159,11 @@ statusInput.addEventListener("change", function(){
 // ===============================
 
 function clearForm() {
-    document.getElementById("titleInput").value = "";
-    document.getElementById("authorInput").value = "";
-    document.getElementById("genreInput").value = "";
-    document.getElementById("seriesInput").value = "";
+    titleInput.value = "";
+    titleInput.value = "";
+	authorInput.value = "";
+	genreInput.value = "";
+	seriesInput.value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
 	
@@ -212,19 +220,12 @@ async function getBookCover(book) {
 }
 
 function runSearch(){
-
     selectedBookIndex = null;
-
     renderBooks();
 
-    const librarySection = document.querySelector(".library");
-
-    if(librarySection){
-        librarySection.scrollIntoView({
-            behavior:"smooth"
-        });
-    }
-
+    document.querySelector(".library")?.scrollIntoView({
+        behavior: "smooth"
+    });
 }
 
 
@@ -401,8 +402,6 @@ function renderBooks() {
 				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
 			</select>
 
-			<p class="view-mode"><strong>Status:</strong> ${book.status}</p>
-
             <div class="book-actions">
 
             <div class="book-rating">
@@ -436,7 +435,8 @@ function renderBooks() {
 
             </div>
 
-            ${coverURL ? `
+            <div class="book-cover-container">
+			${coverURL ? `
 				<img 
 					src="${coverURL}"
 					class="book-cover"
@@ -444,9 +444,10 @@ function renderBooks() {
 				>
 			` : `
 				<div class="no-cover">
-					📖 No cover found in the OpenLibrary database
+					📖 No cover found
 				</div>
 			`}
+			</div>
 
             </div>
         `;
@@ -746,7 +747,6 @@ function changeStatus(index, newStatus) {
 
     books[index].status = newStatus;
 
-    // Reset rating if book is no longer completed
     if(newStatus !== "completed"){
         books[index].rating = 0;
     }
@@ -758,20 +758,19 @@ function changeStatus(index, newStatus) {
     }
 
     renderBooks();
+
+    renderBookSection("readingBooks", "reading");
+    renderBookSection("finishedBooks", "completed");
+    renderReadingStats();
 }
 
 function setRating(index, rating){
 
     // If user clicks the same rating again, remove the rating
-    if(books[index].rating === rating){
-        books[index].rating = 0;
-    }else{
-        books[index].rating = rating;
-    }
+    books[index].rating = books[index].rating === rating ? 0 : rating;
 
     saveToStorage();
     renderBooks();
-
 }
 
 function showToast(message){
@@ -879,9 +878,7 @@ function saveField(index, field){
 }
 
 function cancelField(index, field){
-
     renderBooks();
-
 }
 
 
