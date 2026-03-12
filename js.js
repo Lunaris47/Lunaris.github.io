@@ -47,7 +47,7 @@ titleInput.addEventListener("input", function(){
 addBookBtn.addEventListener("click", function () {
 
     const title = titleInput.value.trim();
-    const author = authorInput.value.trim();
+    const author = authorInput.value.trim() || "Unknown";
     const genre = genreInput.value;
     const series = seriesInput.value;
     const status = statusInput.value;
@@ -67,8 +67,8 @@ addBookBtn.addEventListener("click", function () {
     titleInput.classList.remove("input-error");
 
     const duplicateTitle = books.some(existing =>
-        existing.title.trim().toLowerCase() === title.toLowerCase() &&
-        (existing.author || "").trim().toLowerCase() === author.toLowerCase()
+        existing.title.toLowerCase() === title.toLowerCase() &&
+        (existing.author || "Unknown").toLowerCase() === author.toLowerCase()
     );
 
     if(duplicateTitle){
@@ -78,7 +78,7 @@ addBookBtn.addEventListener("click", function () {
 
     const book = {
         title,
-        author,
+        author: author || "Unknown",
         genre,
         series,
         status,
