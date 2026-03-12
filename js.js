@@ -47,27 +47,34 @@ titleInput.addEventListener("input", function(){
 addBookBtn.addEventListener("click", function () {
 
     const title = titleInput.value.trim();
-    const author = document.getElementById("authorInput").value.trim();
-    const genre = document.getElementById("genreInput").value;
-    const series = document.getElementById("seriesInput").value;
-    const status = document.getElementById("statusInput").value;
-	let rating = Number(document.getElementById("ratingInput").value);
+    const author = authorInput.value.trim();
+    const genre = genreInput.value;
+    const series = seriesInput.value;
+    const status = statusInput.value;
+    let rating = Number(ratingInput.value);
 
-	// Prevent rating if book is not completed
-	if(status !== "completed" && rating > 0){
-		showToast("⭐ You can only rate books after marking them as completed.");
-		return;
-	}
+    if(status !== "completed" && rating > 0){
+        showToast("⭐ You can only rate books after marking them as completed.");
+        return;
+    }
 
-    const titleWarning = document.getElementById("titleWarning");
+    if(title === ""){
+        titleWarning.textContent = "⚠ Please enter a title before adding a book.";
+        titleInput.classList.add("input-error");
+        return;
+    }
 
-	if(title === ""){
-		titleWarning.textContent = "⚠ Please enter a title before adding a book.";
-		titleInput.classList.add("input-error");
-		return;
-	}
-	
-	titleInput.classList.remove("input-error");
+    titleInput.classList.remove("input-error");
+
+    const duplicateTitle = books.some(existing =>
+        existing.title.trim().toLowerCase() === title.toLowerCase() &&
+        (existing.author || "").trim().toLowerCase() === author.toLowerCase()
+    );
+
+    if(duplicateTitle){
+        showToast("⚠️ This book already exists in your library.");
+        return;
+    }
 
     const book = {
         title,
@@ -78,31 +85,7 @@ addBookBtn.addEventListener("click", function () {
         rating
     };
 
-    // ===============================
-    // PREVENT DUPLICATE TITLES
-    // ===============================
-    const duplicateTitle = books.some((existing, index) =>
-		existing => existing.title.trim().toLowerCase() === title.toLowerCase()
-	);
-
-    if(duplicateTitle){
-        showToast("⚠️ This book already exists in your library.");
-        return;
-    }
-
-    // ===============================
-    // FETCH COVER + ADD BOOK
-    // ===============================
     getBookCover(book).then((cover)=>{
-
-        const duplicateCover = books.some(
-			existing => existing.coverURL && existing.coverURL === cover
-		);
-
-        if(duplicateCover){
-            showToast("⚠️ This book already exists in your library.");
-            return;
-        }
 
         book.coverURL = cover;
 
@@ -117,7 +100,7 @@ addBookBtn.addEventListener("click", function () {
 
     });
 
-});	
+});
 
 filterSelect.addEventListener("change", function(){
 	
@@ -159,7 +142,6 @@ statusInput.addEventListener("change", function(){
 // ===============================
 
 function clearForm() {
-    titleInput.value = "";
     titleInput.value = "";
 	authorInput.value = "";
 	genreInput.value = "";
