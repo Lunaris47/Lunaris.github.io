@@ -392,6 +392,7 @@ async function getBookCover(book) {
         if (!data.items || data.items.length === 0) return null;
 
         const match = data.items[0];
+		console.log("Google Books match:", match);
         const volumeInfo = match.volumeInfo;
 
         let cover = null;
