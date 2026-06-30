@@ -3,12 +3,15 @@
 // ===============================
 
 const API_BASE = "https://booklog-api-production.up.railway.app/api";
+const GOOGLE_BOOKS_API_KEY = "AIzaSyCHwnXbzKuess1M4n8kNs87eyQaOwyPDIc";
 
 let books = [];
 let selectedBookIndex = null;
 let recentlyDeletedBook = null;
 let recentlyDeletedIndex = null;
 let undoTimer = null;
+let autocompleteTimer = null;
+let selectedBook = null;
 
 
 // ===============================
@@ -228,6 +231,166 @@ async function loadBooks(){
 
 
 // ===============================
+// AUTOCOMPLETE LOGIC
+// ===============================
+
+/**
+ * Fetches book suggestions from Google Books API as the user types.
+ * Debounced to avoid firing on every keystroke.
+ */
+async function fetchSuggestions(query){
+
+    if(query.length < 3){
+        hideSuggestions();
+        return;
+    }
+
+    try {
+        const encoded = encodeURIComponent(query);
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encoded}&maxResults=5&key=${GOOGLE_BOOKS_API_KEY}`
+        );
+        const data = await response.json();
+
+        if(!data.items || data.items.length === 0){
+            hideSuggestions();
+            return;
+        }
+
+        showSuggestions(data.items);
+
+    } catch (error) {
+        console.log("Autocomplete fetch failed:", error);
+        hideSuggestions();
+    }
+}
+
+/**
+ * Renders suggestion items in the dropdown.
+ */
+function showSuggestions(items){
+
+    const dropdown = document.getElementById("titleSuggestions");
+    dropdown.innerHTML = "";
+
+    items.forEach(item => {
+
+        const info = item.volumeInfo;
+        const title = info.title || "";
+        const authors = info.authors ? info.authors.join(", ") : "Unknown";
+        const cover = info.imageLinks?.thumbnail?.replace("http://", "https://") || null;
+        const series = info.seriesInfo?.volumeSeries?.[0]?.seriesId || null;
+
+        const div = document.createElement("div");
+        div.classList.add("suggestion-item");
+
+        div.innerHTML = `
+            ${cover
+                ? `<img src="${cover}" class="suggestion-thumb" alt="cover">`
+                : `<div class="suggestion-thumb-placeholder">📖</div>`
+            }
+            <div class="suggestion-info">
+                <div class="suggestion-title">${title}</div>
+                <div class="suggestion-author">${authors}</div>
+                ${series ? `<div class="suggestion-series">Series detected</div>` : ""}
+            </div>
+        `;
+
+        div.addEventListener("click", () => {
+            selectSuggestion(item);
+        });
+
+        dropdown.appendChild(div);
+
+    });
+
+    dropdown.style.display = "block";
+}
+
+/**
+ * Hides the suggestions dropdown.
+ */
+function hideSuggestions(){
+    const dropdown = document.getElementById("titleSuggestions");
+    dropdown.style.display = "none";
+    dropdown.innerHTML = "";
+}
+
+/**
+ * Fills in the form fields when a suggestion is selected.
+ */
+function selectSuggestion(item){
+
+    const info = item.volumeInfo;
+
+    const title = info.title || "";
+    const author = info.authors ? info.authors[0] : "";
+    const cover = info.imageLinks?.thumbnail
+        ?.replace("http://", "https://")
+        ?.replace("zoom=1", "zoom=2") || null;
+
+    // Try to detect series from Google Books data
+    const detectedSeries = info.seriesInfo?.volumeSeries?.[0]?.seriesId || null;
+
+    // Fill in the form
+    titleInput.value = title;
+    authorInput.value = author;
+
+    // Only fill series if user hasn't typed one and one was detected
+    if(!seriesInput.value && detectedSeries){
+        seriesInput.value = detectedSeries;
+        showToast("📚 Series auto-detected!");
+    }
+
+    // Store cover for use when adding the book
+    selectedBook = {
+        title,
+        author,
+        coverUrl: cover
+    };
+
+    hideSuggestions();
+    titleInput.focus();
+}
+
+/**
+ * Fetches a book cover from Google Books API as a fallback
+ * when no suggestion was selected from the dropdown.
+ */
+async function getBookCover(book){
+
+    if(book.coverURL || book.coverUrl){
+        return book.coverURL || book.coverUrl;
+    }
+
+    const query = encodeURIComponent(`${book.title} ${book.author}`);
+
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${query}&key=${GOOGLE_BOOKS_API_KEY}`
+        );
+        const data = await response.json();
+
+        if(!data.items || data.items.length === 0) return null;
+
+        const match = data.items[0];
+        const volumeInfo = match.volumeInfo;
+
+        if(volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail){
+            return volumeInfo.imageLinks.thumbnail
+                .replace("http://", "https://")
+                .replace("zoom=1", "zoom=2");
+        }
+
+    } catch (error) {
+        console.log("Cover lookup failed:", error);
+    }
+
+    return null;
+}
+
+
+// ===============================
 // EVENT LISTENERS
 // ===============================
 
@@ -236,9 +399,23 @@ sortSelect.addEventListener("change", renderBooks);
 
 titleInput.addEventListener("input", function(){
     document.getElementById("titleWarning").textContent = "";
+    selectedBook = null;
+
+    // Debounce — wait 400ms after user stops typing before querying
+    clearTimeout(autocompleteTimer);
+    autocompleteTimer = setTimeout(() => {
+        fetchSuggestions(titleInput.value.trim());
+    }, 400);
 });
 
-addBookBtn.addEventListener("click", async function () {
+// Hide suggestions when clicking outside
+document.addEventListener("click", function(e){
+    if(!e.target.closest(".autocomplete-wrapper")){
+        hideSuggestions();
+    }
+});
+
+addBookBtn.addEventListener("click", async function(){
 
     const title = titleInput.value.trim();
     const author = authorInput.value.trim() || "Unknown";
@@ -270,7 +447,8 @@ addBookBtn.addEventListener("click", async function () {
         return;
     }
 
-    const coverURL = await getBookCover({ title, author });
+    // Use cover from autocomplete selection if available, otherwise fetch it
+    const coverURL = selectedBook?.coverUrl || await getBookCover({ title, author });
 
     try {
         const response = await apiFetch("/books", {
@@ -303,10 +481,10 @@ addBookBtn.addEventListener("click", async function () {
 });
 
 filterSelect.addEventListener("change", function(){
-	
-	selectedBookIndex = null;
-	renderBooks();
-	
+
+    selectedBookIndex = null;
+    renderBooks();
+
 });
 
 clearResultsBtn.addEventListener("click", () => {
@@ -353,69 +531,19 @@ genreInput.addEventListener("change", function(){
 // HELPER FUNCTIONS
 // ===============================
 
-function clearForm() {
+function clearForm(){
     titleInput.value = "";
-	authorInput.value = "";
-	genreInput.value = "";
-	genreOtherInput.value = "";
-	genreOtherInput.style.display = "none";
-	seriesInput.value = "";
+    authorInput.value = "";
+    genreInput.value = "";
+    genreOtherInput.value = "";
+    genreOtherInput.style.display = "none";
+    seriesInput.value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
-	
-	addBookBtn.textContent = "Add Book";
-	
-	document.querySelector(".add-book h2").textContent = "Add a New Book";
-	
-}
+    selectedBook = null;
 
-// ===============================
-// GOOGLE BOOKS API CONFIG
-// ===============================
-
-const GOOGLE_BOOKS_API_KEY = "AIzaSyCHwnXbzKuess1M4n8kNs87eyQaOwyPDIc";;
-
-async function getBookCover(book) {
-
-    if (book.coverURL || book.coverUrl) {
-        return book.coverURL || book.coverUrl;
-    }
-
-    const query = encodeURIComponent(`intitle:${book.title} inauthor:${book.author}`);
-
-    try {
-        const response = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=${query}&key=${GOOGLE_BOOKS_API_KEY}`
-        );
-        const data = await response.json();
-
-        if (!data.items || data.items.length === 0) return null;
-
-        const match = data.items[0];
-		console.log("Google Books match:", match);
-        const volumeInfo = match.volumeInfo;
-
-        let cover = null;
-        if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
-            // Use https instead of http, and request a larger size
-            cover = volumeInfo.imageLinks.thumbnail
-                .replace("http://", "https://")
-                .replace("zoom=1", "zoom=2");
-        }
-
-        // Google Books sometimes includes series info in the subtitle
-        // or as part of a "seriesInfo" field (less common, but check both)
-        if (volumeInfo.seriesInfo && volumeInfo.seriesInfo.bookDisplayNumber) {
-            book.detectedSeries = volumeInfo.seriesInfo.volumeSeries?.[0]?.seriesId || null;
-        }
-
-        return cover;
-
-    } catch (error) {
-        console.log("Cover lookup failed:", error);
-    }
-
-    return null;
+    addBookBtn.textContent = "Add Book";
+    document.querySelector(".add-book h2").textContent = "Add a New Book";
 }
 
 function runSearch(){
@@ -432,7 +560,7 @@ function runSearch(){
 // RENDER BOOKS && BOOKSHELF
 // ===============================
 
-function renderBooks() {
+function renderBooks(){
 
     const bookList = document.getElementById("bookList");
     bookList.innerHTML = "";
@@ -442,105 +570,88 @@ function renderBooks() {
     const selectedSort = sortSelect.value;
 
     const isSearching = searchTerm.length > 0;
-	
-	const isFiltering = selectedFilter !== "";
-	const isSorting = selectedSort !== "";
-	const showResultsMode = isSearching || isFiltering || isSorting;
+    const isFiltering = selectedFilter !== "";
+    const isSorting = selectedSort !== "";
+    const showResultsMode = isSearching || isFiltering || isSorting;
 
     let filteredBooks = books;
 
-	if(isSearching){
-		filteredBooks = filteredBooks.filter(book =>
-			book.title.toLowerCase().includes(searchTerm) ||
-			(book.author && book.author.toLowerCase().includes(searchTerm)) ||
-			(book.series && book.series.toLowerCase().includes(searchTerm))
-		);
-	}
+    if(isSearching){
+        filteredBooks = filteredBooks.filter(book =>
+            book.title.toLowerCase().includes(searchTerm) ||
+            (book.author && book.author.toLowerCase().includes(searchTerm)) ||
+            (book.series && book.series.toLowerCase().includes(searchTerm))
+        );
+    }
 
-	if(selectedFilter){
-		filteredBooks = filteredBooks.filter(book =>
-			book.status === selectedFilter
-		);
-	}
+    if(selectedFilter){
+        filteredBooks = filteredBooks.filter(book =>
+            book.status === selectedFilter
+        );
+    }
 
-    if (selectedSort === "title") {
+    if(selectedSort === "title"){
         filteredBooks.sort((a, b) => a.title.localeCompare(b.title));
     }
-	
-	if (selectedSort === "author") {
 
-		const getLastName = (name) => {
-			if(!name) return "";
-			const parts = name.trim().split(" ");
-			return parts[parts.length - 1].toLowerCase();
-		};
+    if(selectedSort === "author"){
 
-		filteredBooks.sort((a, b) =>
-			getLastName(a.author).localeCompare(getLastName(b.author))
-		);
+        const getLastName = (name) => {
+            if(!name) return "";
+            const parts = name.trim().split(" ");
+            return parts[parts.length - 1].toLowerCase();
+        };
 
-	}
-	
-	if (selectedSort === "genre") {
+        filteredBooks.sort((a, b) =>
+            getLastName(a.author).localeCompare(getLastName(b.author))
+        );
+    }
+
+    if(selectedSort === "genre"){
         filteredBooks.sort((a, b) => (a.genre || "").localeCompare(b.genre || ""));
     }
 
-    if (selectedSort === "rating") {
+    if(selectedSort === "rating"){
         filteredBooks.sort((a, b) => b.rating - a.rating);
     }
-	
-	const status = document.getElementById("libraryStatus");
 
-	let messages = [];
+    const status = document.getElementById("libraryStatus");
+    let messages = [];
 
-	if(isSearching){
-		messages.push(`Search: "${searchTerm}"`);
-	}
+    if(isSearching) messages.push(`Search: "${searchTerm}"`);
+    if(selectedFilter) messages.push(`Filter: ${selectedFilter}`);
+    if(selectedSort) messages.push(`Sort: ${selectedSort}`);
 
-	if(selectedFilter){
-		messages.push(`Filter: ${selectedFilter}`);
-	}
-
-	if(selectedSort){
-		messages.push(`Sort: ${selectedSort}`);
-	}
-
-	if(messages.length > 0){
-		status.textContent = `Showing ${filteredBooks.length} book(s) • ` + messages.join(" • ");
-	}
-	else{
-		status.textContent = "";
-	}
-
+    status.textContent = messages.length > 0
+        ? `Showing ${filteredBooks.length} book(s) • ` + messages.join(" • ")
+        : "";
 
     if(!showResultsMode){
 
-    if(selectedBookIndex === null){
+        if(selectedBookIndex === null){
 
-        bookList.innerHTML = `
-            <p style="opacity:0.7; text-align:center; padding:40px;">
-            📚 Select a book from the bookshelf above to view its details.
-            </p>
-        `;
+            bookList.innerHTML = `
+                <p style="opacity:0.7; text-align:center; padding:40px;">
+                📚 Select a book from the bookshelf above to view its details.
+                </p>
+            `;
 
-        renderBookshelf();
-        renderBookSection("readingBooks", "reading");
-		renderBookSection("finishedBooks", "completed");
-		renderReadingStats();
-        return;
+            renderBookshelf();
+            renderBookSection("readingBooks", "reading");
+            renderBookSection("finishedBooks", "completed");
+            renderReadingStats();
+            return;
+        }
+
+        filteredBooks = [books[selectedBookIndex]];
     }
 
-    filteredBooks = [books[selectedBookIndex]];
-}
-
-
-    for(const book of filteredBooks) {
+    for(const book of filteredBooks){
 
         const originalIndex = books.indexOf(book);
-
         const card = document.createElement("div");
-		card.classList.add("book-card");
-		card.id = `book-${originalIndex}`;
+        card.classList.add("book-card");
+        card.id = `book-${originalIndex}`;
 
         const coverURL = book.coverUrl || book.coverURL || null;
 
@@ -550,105 +661,78 @@ function renderBooks() {
             <div class="book-info">
 
             <h3>
-				<span id="title-${originalIndex}">${book.title}</span>
-				<button class="edit-icon" onclick="editField(${originalIndex}, 'title')">✏️</button>
-			</h3>
+                <span id="title-${originalIndex}">${book.title}</span>
+                <button class="edit-icon" onclick="editField(${originalIndex}, 'title')">✏️</button>
+            </h3>
 
             <p>
-				<strong>Author:</strong>
-				<span id="author-${originalIndex}">${book.author || "Unknown"}</span>
-				<button class="edit-icon" onclick="editField(${originalIndex}, 'author')">✏️</button>
-			</p>
-			
+                <strong>Author:</strong>
+                <span id="author-${originalIndex}">${book.author || "Unknown"}</span>
+                <button class="edit-icon" onclick="editField(${originalIndex}, 'author')">✏️</button>
+            </p>
+
             <p>
-				<strong>Genre:</strong>
-				<span id="genre-${originalIndex}">${book.genre || "N/A"}</span>
-				<button class="edit-icon" onclick="editField(${originalIndex}, 'genre')">✏️</button>
-			</p>
-			
+                <strong>Genre:</strong>
+                <span id="genre-${originalIndex}">${book.genre || "N/A"}</span>
+                <button class="edit-icon" onclick="editField(${originalIndex}, 'genre')">✏️</button>
+            </p>
+
             <p class="series-row">
-			<strong>Series:</strong>
+                <strong>Series:</strong>
+                <span id="series-name-${originalIndex}">${book.series || "Standalone"}</span>
+                <button class="edit-icon" onclick="editField(${originalIndex}, 'series')">✏️</button>
+            </p>
 
-			<span id="series-name-${originalIndex}">
-			${book.series || "Standalone"}
-			</span>
-
-			<button class="edit-icon"
-			onclick="editField(${originalIndex}, 'series')">
-			✏️
-			</button>
-			</p>
-
-			<div class="series-info" id="series-info-${originalIndex}"></div>
+            <div class="series-info" id="series-info-${originalIndex}"></div>
 
             <div class="quick-update-label">Quick Update</div>
 
-			<label>Status:</label>
-
-			<select onchange="changeStatus(${originalIndex}, this.value)">
-				<option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
-				<option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
-				<option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
-			</select>
+            <label>Status:</label>
+            <select onchange="changeStatus(${originalIndex}, this.value)">
+                <option value="to-read" ${book.status==="to-read"?"selected":""}>To Read</option>
+                <option value="reading" ${book.status==="reading"?"selected":""}>Reading</option>
+                <option value="completed" ${book.status==="completed"?"selected":""}>Completed</option>
+            </select>
 
             <div class="book-actions">
 
             <div class="book-rating">
-				<strong>Rating:</strong>
-				${renderStars(book.rating, originalIndex)}
-				${book.status !== "to-read" && book.rating === 0 
-					? `<div class="rating-note">Not rated yet</div>` 
-					: ""}
-				${book.status === "to-read" 
-				? `<div class="rating-note">Start reading to rate it.</div>` 
-				: ""}
+                <strong>Rating:</strong>
+                ${renderStars(book.rating, originalIndex)}
+                ${book.status !== "to-read" && book.rating === 0
+                    ? `<div class="rating-note">Not rated yet</div>`
+                    : ""}
+                ${book.status === "to-read"
+                    ? `<div class="rating-note">Start reading to rate it.</div>`
+                    : ""}
             </div>
 
             <div class="book-buttons">
-
-				<button class="edit-mode" onclick="saveInlineEdit(${originalIndex})">
-				Save
-				</button>
-
-				<button class="edit-mode" onclick="cancelInlineEdit(${originalIndex})">
-				Cancel
-				</button>
-
-				<button onclick="deleteBook(${originalIndex})">
-				Delete
-				</button>
-
-			</div>
-
+                <button class="edit-mode" onclick="saveInlineEdit(${originalIndex})">Save</button>
+                <button class="edit-mode" onclick="cancelInlineEdit(${originalIndex})">Cancel</button>
+                <button onclick="deleteBook(${originalIndex})">Delete</button>
             </div>
 
+            </div>
             </div>
 
             <div class="book-cover-container">
-			${coverURL ? `
-				<img 
-					src="${coverURL}"
-					class="book-cover"
-					alt="Book Cover"
-				>
-			` : `
-				<div class="no-cover">
-					📖 No cover found
-				</div>
-			`}
-			</div>
+            ${coverURL ? `
+                <img src="${coverURL}" class="book-cover" alt="Book Cover">
+            ` : `
+                <div class="no-cover">📖 No cover found</div>
+            `}
+            </div>
 
             </div>
         `;
 
         bookList.appendChild(card);
-		renderSeriesInfo(book, originalIndex);
-
+        renderSeriesInfo(book, originalIndex);
     }
-	
-    renderBookshelf();
-	renderBookSection("readingBooks", "reading");
 
+    renderBookshelf();
+    renderBookSection("readingBooks", "reading");
 }
 
 function renderSeriesInfo(book, index){
@@ -656,34 +740,24 @@ function renderSeriesInfo(book, index){
     if(!book.series || book.series === "Standalone") return;
 
     const container = document.getElementById(`series-info-${index}`);
-	if(!container) return;
+    if(!container) return;
 
     const booksInSeries = books.filter(b => b.series === book.series);
+    const completedBooks = booksInSeries.filter(b => b.status === "completed" && b.rating > 0);
 
-    const completedBooks = booksInSeries.filter(b => 
-		b.status === "completed" && b.rating > 0
-	);
-
-	let avgRating = 0;
-
-	if(completedBooks.length > 0){
-		avgRating =
-			completedBooks.reduce((sum, b) => sum + b.rating, 0) /
-			completedBooks.length;
-	}
+    let avgRating = 0;
+    if(completedBooks.length > 0){
+        avgRating = completedBooks.reduce((sum, b) => sum + b.rating, 0) / completedBooks.length;
+    }
 
     const stars = "★".repeat(Math.round(avgRating));
 
     container.innerHTML = `
         <div class="series-box">
-
             <h4>📚 ${book.series} Series</h4>
-
             <p><strong>Books in your library:</strong> ${booksInSeries.length}</p>
             <p><strong>Average Rating:</strong> ${stars || "No ratings yet"}</p>
-
             <div class="series-books"></div>
-
         </div>
     `;
 
@@ -692,39 +766,23 @@ function renderSeriesInfo(book, index){
     booksInSeries.forEach(b => {
 
         const img = document.createElement("img");
-
         img.src = (b.coverUrl || b.coverURL) || "https://via.placeholder.com/50x75";
         img.classList.add("series-mini-book");
 
         img.onclick = () => {
-
-			searchInput.value = "";
-			filterSelect.value = "";
-			sortSelect.value = "";
-
-			selectedBookIndex = books.indexOf(b);
-
-			renderBooks();
-
-			setTimeout(() => {
-
-				const card = document.querySelector(".book-card");
-
-				if(card){
-					card.scrollIntoView({
-						behavior: "smooth",
-						block: "center"
-					});
-				}
-
-			}, 150);
-
-		};
+            searchInput.value = "";
+            filterSelect.value = "";
+            sortSelect.value = "";
+            selectedBookIndex = books.indexOf(b);
+            renderBooks();
+            setTimeout(() => {
+                const card = document.querySelector(".book-card");
+                if(card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 150);
+        };
 
         shelf.appendChild(img);
-
     });
-
 }
 
 function renderBookshelf(){
@@ -750,26 +808,20 @@ function renderBookshelf(){
         const header = document.createElement("div");
         header.classList.add("bookshelf-section-title");
         header.textContent = title;
-
         shelf.appendChild(header);
 
         bookArray.forEach(book => {
 
             const index = books.indexOf(book);
+            const coverURL = book.coverUrl || book.coverURL;
             let bookElement;
 
-            const coverURL = book.coverUrl || book.coverURL;
-
             if(coverURL){
-
                 bookElement = document.createElement("img");
                 bookElement.src = coverURL;
-
-            }else{
-
+            } else {
                 bookElement = document.createElement("div");
                 bookElement.classList.add("bookshelf-book-text");
-
                 bookElement.innerHTML = `
                     <div class="book-title">${book.title}</div>
                     <div class="book-author">${book.author || ""}</div>
@@ -780,13 +832,10 @@ function renderBookshelf(){
             bookElement.classList.add(`status-${book.status}`);
 
             if(selectedBookIndex !== null){
-
                 const selectedSeries = books[selectedBookIndex].series;
-
                 if(book.series === selectedSeries){
                     bookElement.classList.add("series-highlight");
                 }
-
             }
 
             if(index === selectedBookIndex){
@@ -794,44 +843,25 @@ function renderBookshelf(){
             }
 
             bookElement.onclick = () => {
-
                 searchInput.value = "";
                 filterSelect.value = "";
                 sortSelect.value = "";
-
                 selectedBookIndex = index;
-
                 renderBooks();
-
                 setTimeout(() => {
-
                     const card = document.querySelector(".book-card");
-
-                    if(card){
-                        card.scrollIntoView({
-                            behavior:"smooth",
-                            block:"center"
-                        });
-                    }
-
-                },150);
-
+                    if(card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 150);
             };
 
-            bookElement.title = `${book.title}
-${book.author || "Unknown Author"}
-${book.series ? `Series — ${book.series}` : "Standalone"}`;
-
+            bookElement.title = `${book.title}\n${book.author || "Unknown Author"}\n${book.series ? `Series — ${book.series}` : "Standalone"}`;
             shelf.appendChild(bookElement);
-
         });
-
     }
 
     renderSection("📖 Reading", groups.reading);
     renderSection("📚 To Read", groups.toRead);
     renderSection("✅ Finished", groups.completed);
-
 }
 
 function renderBookSection(containerId, status){
@@ -845,29 +875,23 @@ function renderBookSection(containerId, status){
 
         const index = books.indexOf(book);
         const coverURL = book.coverUrl || book.coverURL;
-
         const item = document.createElement("div");
         item.classList.add("reading-book");
 
         if(coverURL){
-
             item.innerHTML = `
                 <img src="${coverURL}" class="reading-cover">
-
                 <div class="reading-text">
                     <div class="reading-title">${book.title}</div>
                     <div class="reading-author">${book.author || ""}</div>
                 </div>
             `;
-
         } else {
-
             item.innerHTML = `
                 <div class="bookshelf-book-text">
                     <div class="book-title">${book.title}</div>
                     <div class="book-author">${book.author || ""}</div>
                 </div>
-
                 <div class="reading-text">
                     <div class="reading-title">${book.title}</div>
                     <div class="reading-author">${book.author || ""}</div>
@@ -876,34 +900,19 @@ function renderBookSection(containerId, status){
         }
 
         item.onclick = () => {
-
             selectedBookIndex = index;
-
             renderBooks();
-
             setTimeout(() => {
-
                 const card = document.querySelector(".book-card");
-
-                if(card){
-                    card.scrollIntoView({
-                        behavior:"smooth",
-                        block:"center"
-                    });
-                }
-
-            },150);
-
+                if(card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 150);
         };
 
         container.appendChild(item);
-
     });
-
 }
 
 function renderReadingStats(){
-
     const toRead = books.filter(b => b.status === "to-read").length;
     const reading = books.filter(b => b.status === "reading").length;
     const finished = books.filter(b => b.status === "completed").length;
@@ -911,7 +920,6 @@ function renderReadingStats(){
     document.getElementById("toReadCount").textContent = toRead;
     document.getElementById("readingCount").textContent = reading;
     document.getElementById("finishedCount").textContent = finished;
-
 }
 
 
@@ -920,14 +928,11 @@ function renderReadingStats(){
 // ===============================
 
 function deleteBook(index){
-
     bookToDeleteIndex = index;
-
     deleteModal.style.display = "flex";
-
 }
 
-async function changeStatus(index, newStatus) {
+async function changeStatus(index, newStatus){
 
     const book = books[index];
 
@@ -945,9 +950,7 @@ async function changeStatus(index, newStatus) {
         const updated = await response.json();
         books[index] = updated;
 
-        if(newStatus === "completed"){
-            celebrateCompletion();
-        }
+        if(newStatus === "completed") celebrateCompletion();
 
         renderBooks();
         renderBookSection("readingBooks", "reading");
@@ -985,44 +988,28 @@ async function setRating(index, rating){
 }
 
 function showToast(message){
-
     const toast = document.getElementById("toast");
-
     toast.textContent = message;
-
     toast.classList.add("show");
-
-    setTimeout(()=>{
-        toast.classList.remove("show");
-    },2500);
-
+    setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
 function showUndoToast(){
-
     const toast = document.getElementById("toast");
-
-    toast.innerHTML = `
-		🗑️ Book deleted 
-		<button onclick="undoDelete()">Undo</button>
-	`;
-
+    toast.innerHTML = `🗑️ Book deleted <button onclick="undoDelete()">Undo</button>`;
     toast.classList.add("show");
 
     clearTimeout(undoTimer);
-
-    undoTimer = setTimeout(()=>{
+    undoTimer = setTimeout(() => {
         toast.classList.remove("show");
         recentlyDeletedBook = null;
         recentlyDeletedIndex = null;
-    },5000);
-
+    }, 5000);
 }
 
 async function undoDelete(){
 
     if(recentlyDeletedBook !== null){
-
         try {
             const response = await apiFetch("/books", {
                 method: "POST",
@@ -1050,12 +1037,9 @@ async function undoDelete(){
 
     const toast = document.getElementById("toast");
     toast.classList.remove("show");
-
     clearTimeout(undoTimer);
-
     recentlyDeletedBook = null;
     recentlyDeletedIndex = null;
-
 }
 
 function editField(index, field){
@@ -1064,12 +1048,9 @@ function editField(index, field){
     const row = span.parentElement;
     const editBtn = row.querySelector(".edit-icon");
 
-    if(editBtn){
-        editBtn.style.display = "none";
-    }
+    if(editBtn) editBtn.style.display = "none";
 
     const currentValue = span.textContent;
-
     span.dataset.original = currentValue;
 
     span.innerHTML = `
@@ -1109,7 +1090,6 @@ async function saveField(index, field){
 
         const updated = await response.json();
         books[index] = updated;
-
         renderBooks();
         showToast("Field updated.");
 
@@ -1131,48 +1111,36 @@ function renderStars(rating, index){
 
     const book = books[index];
     const canRate = book.status !== "to-read";
-
     let starsHTML = "";
 
     for(let i = 1; i <= 5; i++){
-
         starsHTML += `
-		<span 
-			class="star ${!canRate ? "star-disabled" : ""}"
-			data-value="${i}"
-			${canRate ? `
-				onclick="setRating(${index}, ${i})"
-				onmouseover="previewRating(${index}, ${i})"
-				onmouseout="restoreRating(${index})"
-			` : ""}
-		>
-		${i <= rating ? "★" : "☆"}
-		</span>
-		`;
+        <span
+            class="star ${!canRate ? "star-disabled" : ""}"
+            data-value="${i}"
+            ${canRate ? `
+                onclick="setRating(${index}, ${i})"
+                onmouseover="previewRating(${index}, ${i})"
+                onmouseout="restoreRating(${index})"
+            ` : ""}
+        >
+        ${i <= rating ? "★" : "☆"}
+        </span>
+        `;
     }
 
     return starsHTML;
 }
 
 function previewRating(index, rating){
-
     const stars = document.querySelectorAll(`#book-${index} .star`);
-
-    stars.forEach((star,i)=>{
-        star.textContent = i < rating ? "★" : "☆";
-    });
-
+    stars.forEach((star, i) => star.textContent = i < rating ? "★" : "☆");
 }
 
 function restoreRating(index){
-
     const book = books[index];
     const stars = document.querySelectorAll(`#book-${index} .star`);
-
-    stars.forEach((star,i)=>{
-        star.textContent = i < book.rating ? "★" : "☆";
-    });
-
+    stars.forEach((star, i) => star.textContent = i < book.rating ? "★" : "☆");
 }
 
 
@@ -1185,7 +1153,6 @@ confirmDeleteBtn.onclick = async function(){
     if(bookToDeleteIndex !== null){
 
         const book = books[bookToDeleteIndex];
-
         recentlyDeletedBook = book;
         recentlyDeletedIndex = bookToDeleteIndex;
 
@@ -1200,18 +1167,11 @@ confirmDeleteBtn.onclick = async function(){
                 return;
             }
 
-            if(selectedBookIndex === bookToDeleteIndex){
-                selectedBookIndex = null;
-            }
-
-            if(selectedBookIndex > bookToDeleteIndex){
-                selectedBookIndex--;
-            }
+            if(selectedBookIndex === bookToDeleteIndex) selectedBookIndex = null;
+            if(selectedBookIndex > bookToDeleteIndex) selectedBookIndex--;
 
             await loadBooks();
-
             showUndoToast();
-
             bookToDeleteIndex = null;
 
         } catch (error) {
@@ -1234,23 +1194,11 @@ cancelDeleteBtn.onclick = function(){
 const backToTopBtn = document.getElementById("backToTop");
 
 window.addEventListener("scroll", function(){
-
-    if(window.scrollY > 300){
-        backToTopBtn.style.display = "block";
-    }
-    else{
-        backToTopBtn.style.display = "none";
-    }
-
+    backToTopBtn.style.display = window.scrollY > 300 ? "block" : "none";
 });
 
 backToTopBtn.onclick = function(){
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-
+    window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 
@@ -1258,16 +1206,12 @@ backToTopBtn.onclick = function(){
 // COMPLETION TOAST
 // ===============================
 
-function celebrateCompletion() {
+function celebrateCompletion(){
     const toast = document.getElementById("toast");
-    if (!toast) return;
-
+    if(!toast) return;
     toast.textContent = "🎉 Congratulations on finishing your book!";
     toast.classList.add("show");
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3000);
+    setTimeout(() => toast.classList.remove("show"), 3000);
 }
 
 
@@ -1276,11 +1220,9 @@ function celebrateCompletion() {
 // ===============================
 
 document.addEventListener("DOMContentLoaded", function(){
-
     if(isLoggedIn()){
         showMainApp();
     } else {
         showAuthScreen();
     }
-
 });

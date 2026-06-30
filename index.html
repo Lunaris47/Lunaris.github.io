@@ -56,7 +56,10 @@
 <div class="left-panel">
 <div class="panel add-book">
 <h2>Add a New Book</h2>
-<input id="titleInput" type="text" placeholder="Title">
+<div class="autocomplete-wrapper">
+  <input id="titleInput" type="text" placeholder="Title" autocomplete="off">
+  <div id="titleSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+</div>
 <div id="titleWarning" class="input-warning"></div>
 <input id="authorInput" type="text" placeholder="Author">
 <select id="genreInput">
