@@ -1,162 +1,48 @@
-# Human-Computer Interaction Project -- Jesse Sciamanna
+# 📚 Book Log — Full-Stack Reading Tracker
 
-# 📚 Cozy Book Log
+A personal book tracking web app with a fully connected backend API. Users can log books, track reading status, rate completed books, and browse their library with cover art fetched automatically from the Google Books API.
 
-A cozy and interactive web application for tracking your personal reading journey.
-Users can add books, organize their reading progress, view books on a virtual bookshelf, and manage their library with powerful search and filtering tools.
-
----
-
-# ✨ Features
-
-### 📖 Add and Manage Books
-
-* Add books with **title, author, genre, and series**
-* Edit book information at any time
-* Delete books with confirmation and undo functionality
-* Automatic book cover retrieval using the **OpenLibrary API**
-
-### 🔍 Search, Sort, and Filter
-
-* Search by:
-
-  * Title
-  * Author
-  * Series
-* Sort books by:
-
-  * Title
-  * Author
-  * Genre
-  * Rating
-* Filter books by reading status:
-
-  * To Read
-  * Reading
-  * Completed
-
-### 📚 Interactive Bookshelf
-
-* Books appear visually on a **virtual bookshelf**
-* Clicking a book scrolls directly to its detailed library card
-* Hover tooltips display:
-
-  * Title
-  * Author
-  * Series
-* Books are visually categorized by status using colored indicators
-
-### 📊 Reading Progress Tracking
-
-* Dedicated panels for:
-
-  * **Currently Reading**
-  * **Finished Reading**
-* Reading statistics show totals for:
-
-  * Books to read
-  * Books currently reading
-  * Books completed
-
-### ⭐ Rating System
-
-* Books can be rated using a **5-star system**
-* Ratings are only enabled for **completed books**
-
-### 📱 Mobile Responsive Design
-
-* Layout adapts for smaller screens
-* Panels stack vertically on mobile devices
-* Bookshelf scales properly for phone displays
-
-### 🔔 User Feedback
-
-* Toast notifications for actions
-* Visual highlights when editing books
-* Smooth scrolling interactions
+**Live Site:** https://lunaris47.github.io/Lunaris.github.io/
+**Backend API:** https://github.com/Lunaris47/booklog-api
 
 ---
 
-# 🛠️ Technologies Used
+## Features
 
-* **HTML5**
-* **CSS3**
-* **JavaScript (Vanilla JS)**
-* **OpenLibrary API** for automatic book cover retrieval
-* **LocalStorage** for persistent data storage
-
----
-
-# 🧠 How It Works
-
-Books are stored locally using the browser's **LocalStorage**, allowing users to keep their reading library saved even after refreshing the page.
-
-When a book is added:
-
-1. The app queries the **OpenLibrary API** for a matching cover image.
-2. The book is stored locally with its metadata.
-3. The bookshelf and library views update automatically.
+- **User authentication** — register and log in with JWT-based auth; each user's library is private and persistent
+- **Book autocomplete** — real-time title and author suggestions powered by the Google Books API, with cover image auto-fill
+- **Genre dropdown** — standardized genre selection with an "Other" fallback for custom entries
+- **Reading status tracking** — organize books as To Read, Reading, or Completed
+- **Star ratings** — rate books once you've started reading them (1–5 stars)
+- **Search, sort, and filter** — find books by title, author, or series; sort by title, author, genre, or rating
+- **Series grouping** — books in the same series are grouped with average ratings shown
+- **Reading stats** — live count of books by status in the header
+- **Bookshelf view** — visual grid of cover art organized by reading status
+- **Logout** — session clears on logout; token stored in sessionStorage for security
 
 ---
 
-# 🚀 How to Run the Project
+## Tech Stack
 
-1. Clone the repository
-
-```
-git clone https://github.com/Lunaris47/Lunaris.github.io
-```
-
-2. Open the project folder
-
-3. Launch `index.html` in your browser
-
-No installation or backend required.
+| Layer | Technology |
+|-------|------------|
+| Frontend | HTML, CSS, JavaScript (vanilla) |
+| Authentication | JWT tokens (issued by backend) |
+| Book Data | Google Books API (autocomplete + covers) |
+| Backend API | Java + Spring Boot (separate repo) |
+| Database | PostgreSQL on Neon (via backend) |
+| Hosting | GitHub Pages |
 
 ---
 
-# 🧪 Example User Flow
+## Backend
 
-1. Add a new book to your library
-2. The book appears on your **bookshelf**
-3. Click the book to view its **library card**
-4. Update reading status as you progress
-5. Once finished, rate the book ⭐
+The frontend connects to a live REST API built with Java and Spring Boot, deployed on Railway. All book data is stored in a cloud PostgreSQL database — nothing is saved in the browser.
+
+→ **Backend repo:** https://github.com/Lunaris47/booklog-api
 
 ---
 
-# 📸 Screenshots
+## Author
 
-*(You can add screenshots here for extra credit or portfolio polish)*
-
-Example:
-
-```
-/screenshots/bookshelf.png
-/screenshots/library.png
-```
-
----
-
-# 📌 Future Improvements
-
-Potential enhancements for future versions:
-
-* Dark mode
-* Book notes or reviews
-* Goodreads-style reading goals
-* Drag-and-drop bookshelf organization
-* Cloud database storage
-* Import/export book lists
-
----
-
-# 👨‍💻 Author
-
-Created by **Jesse Sciamanna**
-
----
-
-# 📄 License
-
-This project is open-source and available under the MIT License.
+Jesse Sciamanna — [GitHub](https://github.com/Lunaris47) | [LinkedIn](https://www.linkedin.com/in/JesseSciam)
