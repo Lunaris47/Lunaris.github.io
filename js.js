@@ -350,7 +350,7 @@ function selectSuggestion(item){
     };
 
     hideSuggestions();
-    titleInput.focus();
+    authorInput.focus();
 }
 
 /**
