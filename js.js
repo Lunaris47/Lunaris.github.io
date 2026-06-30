@@ -343,11 +343,8 @@ function selectSuggestion(item){
     }
 
     // Store cover for use when adding the book
-    selectedBook = {
-        title,
-        author,
-        coverUrl: cover
-    };
+    selectedBook = { title, author, coverUrl: cover };
+	document.getElementById("coverUrlInput").value = cover || "";
 
     hideSuggestions();
     authorInput.focus();
@@ -448,7 +445,8 @@ addBookBtn.addEventListener("click", async function(){
     }
 
     // Use cover from autocomplete selection if available, otherwise fetch it
-    const coverURL = selectedBook?.coverUrl || await getBookCover({ title, author });
+    const savedCover = document.getElementById("coverUrlInput").value;
+	const coverURL = savedCover || await getBookCover({ title, author });
 
     try {
         const response = await apiFetch("/books", {
@@ -540,6 +538,7 @@ function clearForm(){
     seriesInput.value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
+	document.getElementById("coverUrlInput").value = "";
     selectedBook = null;
 
     addBookBtn.textContent = "Add Book";
