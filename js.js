@@ -11,6 +11,7 @@ let recentlyDeletedBook = null;
 let recentlyDeletedIndex = null;
 let undoTimer = null;
 let autocompleteTimer = null;
+let authorAutocompleteTimer = null;
 let selectedBook = null;
 
 
@@ -308,7 +309,7 @@ function showSuggestions(items){
 }
 
 /**
- * Hides the suggestions dropdown.
+ * Hides the title suggestions dropdown.
  */
 function hideSuggestions(){
     const dropdown = document.getElementById("titleSuggestions");
@@ -317,7 +318,7 @@ function hideSuggestions(){
 }
 
 /**
- * Fills in the form fields when a suggestion is selected.
+ * Fills in the form fields when a title suggestion is selected.
  */
 function selectSuggestion(item){
 
@@ -344,10 +345,101 @@ function selectSuggestion(item){
 
     // Store cover for use when adding the book
     selectedBook = { title, author, coverUrl: cover };
-	document.getElementById("coverUrlInput").value = cover || "";
+    document.getElementById("coverUrlInput").value = cover || "";
 
     hideSuggestions();
     authorInput.focus();
+}
+
+/**
+ * Fetches author suggestions from Google Books API as the user types.
+ * Queries by author name and returns unique author matches.
+ */
+async function fetchAuthorSuggestions(query){
+
+    if(query.length < 3){
+        hideAuthorSuggestions();
+        return;
+    }
+
+    try {
+        const encoded = encodeURIComponent(`inauthor:${query}`);
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encoded}&maxResults=8&key=${GOOGLE_BOOKS_API_KEY}`
+        );
+        const data = await response.json();
+
+        if(!data.items || data.items.length === 0){
+            hideAuthorSuggestions();
+            return;
+        }
+
+        // Extract unique author names from results
+        const authors = [];
+        const seen = new Set();
+
+        data.items.forEach(item => {
+            const itemAuthors = item.volumeInfo.authors || [];
+            itemAuthors.forEach(author => {
+                if(!seen.has(author) && author.toLowerCase().includes(query.toLowerCase())){
+                    seen.add(author);
+                    authors.push(author);
+                }
+            });
+        });
+
+        if(authors.length === 0){
+            hideAuthorSuggestions();
+            return;
+        }
+
+        showAuthorSuggestions(authors);
+
+    } catch (error) {
+        console.log("Author autocomplete failed:", error);
+        hideAuthorSuggestions();
+    }
+}
+
+/**
+ * Renders author suggestion items in the dropdown.
+ */
+function showAuthorSuggestions(authors){
+
+    const dropdown = document.getElementById("authorSuggestions");
+    dropdown.innerHTML = "";
+
+    authors.slice(0, 5).forEach(author => {
+
+        const div = document.createElement("div");
+        div.classList.add("suggestion-item");
+
+        div.innerHTML = `
+            <div class="suggestion-thumb-placeholder">✍️</div>
+            <div class="suggestion-info">
+                <div class="suggestion-title">${author}</div>
+            </div>
+        `;
+
+        div.addEventListener("click", () => {
+            authorInput.value = author;
+            hideAuthorSuggestions();
+            document.getElementById("statusInput").focus();
+        });
+
+        dropdown.appendChild(div);
+    });
+
+    dropdown.style.display = "block";
+}
+
+/**
+ * Hides the author suggestions dropdown.
+ */
+function hideAuthorSuggestions(){
+    const dropdown = document.getElementById("authorSuggestions");
+    dropdown.style.display = "none";
+    dropdown.innerHTML = "";
 }
 
 /**
@@ -405,10 +497,18 @@ titleInput.addEventListener("input", function(){
     }, 400);
 });
 
+authorInput.addEventListener("input", function(){
+    clearTimeout(authorAutocompleteTimer);
+    authorAutocompleteTimer = setTimeout(() => {
+        fetchAuthorSuggestions(authorInput.value.trim());
+    }, 400);
+});
+
 // Hide suggestions when clicking outside
 document.addEventListener("click", function(e){
     if(!e.target.closest(".autocomplete-wrapper")){
         hideSuggestions();
+        hideAuthorSuggestions();
     }
 });
 
@@ -446,7 +546,7 @@ addBookBtn.addEventListener("click", async function(){
 
     // Use cover from autocomplete selection if available, otherwise fetch it
     const savedCover = document.getElementById("coverUrlInput").value;
-	const coverURL = savedCover || await getBookCover({ title, author });
+    const coverURL = savedCover || await getBookCover({ title, author });
 
     try {
         const response = await apiFetch("/books", {
@@ -479,10 +579,8 @@ addBookBtn.addEventListener("click", async function(){
 });
 
 filterSelect.addEventListener("change", function(){
-
     selectedBookIndex = null;
     renderBooks();
-
 });
 
 clearResultsBtn.addEventListener("click", () => {
@@ -496,24 +594,19 @@ clearResultsBtn.addEventListener("click", () => {
 searchBtn.addEventListener("click", runSearch);
 
 searchInput.addEventListener("keydown", function(event){
-
     if(event.key === "Enter"){
         runSearch();
     }
-
 });
 
 statusInput.addEventListener("change", function(){
-
     if(statusInput.value === "to-read"){
         ratingInput.value = "0";
         showToast("⭐ Ratings are only allowed once you've started reading.");
     }
-
 });
 
 genreInput.addEventListener("change", function(){
-
     if(genreInput.value === "Other"){
         genreOtherInput.style.display = "block";
         genreOtherInput.focus();
@@ -521,7 +614,14 @@ genreInput.addEventListener("change", function(){
         genreOtherInput.style.display = "none";
         genreOtherInput.value = "";
     }
+});
 
+// Toggle "More Details" section
+document.getElementById("toggleDetailsBtn").addEventListener("click", function(){
+    const moreDetails = document.getElementById("moreDetails");
+    const isOpen = moreDetails.style.display !== "none";
+    moreDetails.style.display = isOpen ? "none" : "block";
+    this.textContent = isOpen ? "More details ▼" : "Less details ▲";
 });
 
 
@@ -538,7 +638,11 @@ function clearForm(){
     seriesInput.value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
-	document.getElementById("coverUrlInput").value = "";
+    document.getElementById("coverUrlInput").value = "";
+    document.getElementById("moreDetails").style.display = "none";
+    document.getElementById("toggleDetailsBtn").textContent = "More details ▼";
+    hideSuggestions();
+    hideAuthorSuggestions();
     selectedBook = null;
 
     addBookBtn.textContent = "Add Book";
@@ -548,10 +652,7 @@ function clearForm(){
 function runSearch(){
     selectedBookIndex = null;
     renderBooks();
-
-    document.querySelector(".library")?.scrollIntoView({
-        behavior: "smooth"
-    });
+    document.querySelector(".library")?.scrollIntoView({ behavior: "smooth" });
 }
 
 
@@ -594,13 +695,11 @@ function renderBooks(){
     }
 
     if(selectedSort === "author"){
-
         const getLastName = (name) => {
             if(!name) return "";
             const parts = name.trim().split(" ");
             return parts[parts.length - 1].toLowerCase();
         };
-
         filteredBooks.sort((a, b) =>
             getLastName(a.author).localeCompare(getLastName(b.author))
         );
@@ -628,13 +727,11 @@ function renderBooks(){
     if(!showResultsMode){
 
         if(selectedBookIndex === null){
-
             bookList.innerHTML = `
                 <p style="opacity:0.7; text-align:center; padding:40px;">
                 📚 Select a book from the bookshelf above to view its details.
                 </p>
             `;
-
             renderBookshelf();
             renderBookSection("readingBooks", "reading");
             renderBookSection("finishedBooks", "completed");
@@ -656,7 +753,6 @@ function renderBooks(){
 
         card.innerHTML = `
             <div class="book-card-content">
-
             <div class="book-info">
 
             <h3>
@@ -694,7 +790,6 @@ function renderBooks(){
             </select>
 
             <div class="book-actions">
-
             <div class="book-rating">
                 <strong>Rating:</strong>
                 ${renderStars(book.rating, originalIndex)}
@@ -711,7 +806,6 @@ function renderBooks(){
                 <button class="edit-mode" onclick="cancelInlineEdit(${originalIndex})">Cancel</button>
                 <button onclick="deleteBook(${originalIndex})">Delete</button>
             </div>
-
             </div>
             </div>
 
@@ -722,7 +816,6 @@ function renderBooks(){
                 <div class="no-cover">📖 No cover found</div>
             `}
             </div>
-
             </div>
         `;
 
@@ -763,11 +856,9 @@ function renderSeriesInfo(book, index){
     const shelf = container.querySelector(".series-books");
 
     booksInSeries.forEach(b => {
-
         const img = document.createElement("img");
         img.src = (b.coverUrl || b.coverURL) || "https://via.placeholder.com/50x75";
         img.classList.add("series-mini-book");
-
         img.onclick = () => {
             searchInput.value = "";
             filterSelect.value = "";
@@ -779,7 +870,6 @@ function renderSeriesInfo(book, index){
                 if(card) card.scrollIntoView({ behavior: "smooth", block: "center" });
             }, 150);
         };
-
         shelf.appendChild(img);
     });
 }

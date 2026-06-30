@@ -1,168 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cozy Book Log</title>
-<link rel="stylesheet" href="css.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cozy Book Log</title>
+    <link rel="stylesheet" href="css.css">
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
-<div id="authScreen" class="auth-screen">
-  <div class="auth-box">
-    <h1>📚 Cozy Book Log</h1>
-    <p class="auth-subtitle">Track your reading journey</p>
+    <!-- ===============================
+         AUTH SCREEN
+    ================================ -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-box">
+            <h1>📚 Cozy Book Log</h1>
+            <p class="auth-subtitle">Track your reading journey</p>
 
-    <div class="auth-tabs">
-      <button id="loginTab" class="auth-tab active">Login</button>
-      <button id="registerTab" class="auth-tab">Register</button>
+            <div class="auth-tabs">
+                <button id="loginTab" class="auth-tab active">Login</button>
+                <button id="registerTab" class="auth-tab">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <input id="loginUsername" type="text" placeholder="Username">
+                <input id="loginPassword" type="password" placeholder="Password">
+                <div id="loginError" class="auth-error"></div>
+                <button id="loginBtn">Login</button>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="auth-form" style="display:none;">
+                <input id="registerUsername" type="text" placeholder="Username">
+                <input id="registerEmail" type="email" placeholder="Email">
+                <input id="registerPassword" type="password" placeholder="Password">
+                <div id="registerError" class="auth-error"></div>
+                <button id="registerBtn">Create Account</button>
+            </div>
+        </div>
     </div>
 
-    <!-- LOGIN FORM -->
-    <div id="loginForm" class="auth-form">
-      <input id="loginUsername" type="text" placeholder="Username">
-      <input id="loginPassword" type="password" placeholder="Password">
-      <div id="loginError" class="auth-error"></div>
-      <button id="loginBtn">Login</button>
+    <!-- ===============================
+         MAIN APP (hidden until logged in)
+    ================================ -->
+    <div id="mainApp" style="display:none;">
+
+        <header>
+            <h1>📚 Cozy Book Log</h1>
+            <p>Track your reading journey</p>
+            <button id="logoutBtn" class="logout-btn">Logout</button>
+        </header>
+
+        <div class="reading-stats">
+            <div class="stat">📚 To Read: <span id="toReadCount">0</span></div>
+            <div class="stat">📖 Reading: <span id="readingCount">0</span></div>
+            <div class="stat">✅ Finished: <span id="finishedCount">0</span></div>
+        </div>
+
+        <main class="app-layout">
+
+            <!-- LEFT PANEL -->
+            <div class="left-panel">
+
+                <!-- Add a New Book -->
+                <div class="panel add-book">
+                    <h2>Add a New Book</h2>
+
+                    <!-- Title with autocomplete -->
+                    <div class="autocomplete-wrapper">
+                        <input id="titleInput" type="text" placeholder="Title" autocomplete="off">
+                        <div id="titleSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                    </div>
+                    <div id="titleWarning" class="input-warning"></div>
+
+                    <!-- Author with autocomplete -->
+                    <div class="autocomplete-wrapper">
+                        <input id="authorInput" type="text" placeholder="Author" autocomplete="off">
+                        <div id="authorSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                    </div>
+
+                    <!-- Status and Rating -->
+                    <div class="form-row">
+                        <select id="statusInput">
+                            <option value="to-read">To Read</option>
+                            <option value="reading">Reading</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <select id="ratingInput">
+                            <option value="0">No rating</option>
+                            <option value="1">★☆☆☆☆</option>
+                            <option value="2">★★☆☆☆</option>
+                            <option value="3">★★★☆☆</option>
+                            <option value="4">★★★★☆</option>
+                            <option value="5">★★★★★</option>
+                        </select>
+                    </div>
+
+                    <!-- More Details Toggle -->
+                    <button id="toggleDetailsBtn" class="toggle-details-btn">More details ▼</button>
+
+                    <!-- Collapsible Details -->
+                    <div id="moreDetails" class="more-details" style="display:none;">
+                        <select id="genreInput">
+                            <option value="">Select a genre</option>
+                            <option value="Fiction">Fiction</option>
+                            <option value="Non-Fiction">Non-Fiction</option>
+                            <option value="Sci-Fi">Sci-Fi</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Mystery">Mystery</option>
+                            <option value="Thriller">Thriller</option>
+                            <option value="Romance">Romance</option>
+                            <option value="Horror">Horror</option>
+                            <option value="Biography">Biography</option>
+                            <option value="History">History</option>
+                            <option value="Self-Help">Self-Help</option>
+                            <option value="Poetry">Poetry</option>
+                            <option value="Young Adult">Young Adult</option>
+                            <option value="Children's">Children's</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input id="genreOtherInput" type="text" placeholder="Enter genre" style="display:none;">
+                        <input id="seriesInput" type="text" placeholder="Series (e.g. Harry Potter)">
+                    </div>
+
+                    <!-- Hidden cover URL field -->
+                    <input type="hidden" id="coverUrlInput">
+
+                    <!-- Action Buttons -->
+                    <div class="form-row">
+                        <button id="addBookBtn">Add Book</button>
+                        <button id="cancelEditBtn" style="display:none;">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Find Books -->
+                <div class="panel">
+                    <h2>Find Books</h2>
+                    <div class="search-bar">
+                        <input id="searchInput" type="text" placeholder="Search by title, author, or series">
+                    </div>
+                    <select id="sortSelect">
+                        <option value="">Sort by</option>
+                        <option value="title">Title</option>
+                        <option value="author">Author</option>
+                        <option value="genre">Genre</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                    <select id="filterSelect">
+                        <option value="">Filter by status</option>
+                        <option value="to-read">To Read</option>
+                        <option value="reading">Reading</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <div class="search-actions">
+                        <button id="searchBtn">Search</button>
+                        <button id="clearResults">Reset View</button>
+                    </div>
+                </div>
+
+                <!-- Currently Reading -->
+                <div class="panel">
+                    <h2>Currently Reading</h2>
+                    <div id="readingBooks"></div>
+                </div>
+
+                <!-- Finished Reading -->
+                <div class="panel">
+                    <h2>Finished Reading</h2>
+                    <div id="finishedBooks"></div>
+                </div>
+
+            </div>
+            <!-- end left-panel -->
+
+            <!-- RIGHT PANEL -->
+            <div class="right-panel">
+
+                <!-- Bookshelf -->
+                <div class="bookshelf">
+                    <h2>📚 My Bookshelf</h2>
+                    <div id="bookshelfGrid"></div>
+                </div>
+
+                <!-- Library -->
+                <div class="library">
+                    <h2>Your Library</h2>
+                    <p id="libraryStatus"></p>
+                    <div id="bookList"></div>
+                </div>
+
+            </div>
+            <!-- end right-panel -->
+
+        </main>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast"></div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <p>Are you sure you want to delete this book?</p>
+                <div class="modal-buttons">
+                    <button id="confirmDelete">Delete</button>
+                    <button id="cancelDelete">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Top Button -->
+        <button id="backToTop">⬆ Top</button>
+
     </div>
+    <!-- end mainApp -->
 
-    <!-- REGISTER FORM -->
-    <div id="registerForm" class="auth-form" style="display:none;">
-      <input id="registerUsername" type="text" placeholder="Username">
-      <input id="registerEmail" type="email" placeholder="Email">
-      <input id="registerPassword" type="password" placeholder="Password">
-      <div id="registerError" class="auth-error"></div>
-      <button id="registerBtn">Create Account</button>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN APP (hidden until logged in) -->
-<div id="mainApp" style="display:none;">
-
-<header>
-<h1>📚 Cozy Book Log</h1>
-<p>Track your reading journey</p>
-<button id="logoutBtn" class="logout-btn">Logout</button>
-</header>
-<div class="reading-stats">
-<div class="stat">📚 To Read: <span id="toReadCount">0</span></div>
-<div class="stat">📖 Reading: <span id="readingCount">0</span></div>
-<div class="stat">✅ Finished: <span id="finishedCount">0</span></div>
-</div>
-<main class="app-layout">
-<!-- LEFT PANEL -->
-<div class="left-panel">
-<div class="panel add-book">
-<h2>Add a New Book</h2>
-<div class="autocomplete-wrapper">
-  <input id="titleInput" type="text" placeholder="Title" autocomplete="off">
-  <div id="titleSuggestions" class="suggestions-dropdown" style="display:none;"></div>
-</div>
-<div id="titleWarning" class="input-warning"></div>
-<input id="authorInput" type="text" placeholder="Author">
-<select id="genreInput">
-  <option value="">Select a genre</option>
-  <option value="Fiction">Fiction</option>
-  <option value="Non-Fiction">Non-Fiction</option>
-  <option value="Sci-Fi">Sci-Fi</option>
-  <option value="Fantasy">Fantasy</option>
-  <option value="Mystery">Mystery</option>
-  <option value="Thriller">Thriller</option>
-  <option value="Romance">Romance</option>
-  <option value="Horror">Horror</option>
-  <option value="Biography">Biography</option>
-  <option value="History">History</option>
-  <option value="Self-Help">Self-Help</option>
-  <option value="Poetry">Poetry</option>
-  <option value="Young Adult">Young Adult</option>
-  <option value="Children's">Children's</option>
-  <option value="Other">Other</option>
-</select>
-<input id="genreOtherInput" type="text" placeholder="Enter genre" style="display:none;">
-<input type="hidden" id="coverUrlInput">
-<input id="seriesInput" type="text" placeholder="Series">
-<div class="form-row">
-<select id="statusInput">
-<option value="to-read">To Read</option>
-<option value="reading">Reading</option>
-<option value="completed">Completed</option>
-</select>
-<select id="ratingInput">
-<option value="0">No rating</option>
-<option value="1">★☆☆☆☆</option>
-<option value="2">★★☆☆☆</option>
-<option value="3">★★★☆☆</option>
-<option value="4">★★★★☆</option>
-<option value="5">★★★★★</option>
-</select>
-</div>
-<div class="form-row">
-<button id="addBookBtn">Add Book</button>
-<button id="cancelEditBtn" style="display:none;">Cancel</button>
-</div>
-</div>
-<div class="panel">
-<h2>Find Books</h2>
-<div class="search-bar">
-<input id="searchInput" type="text" placeholder="Search by title, author, or series">
-</div>
-<select id="sortSelect">
-<option value="">Sort by</option>
-<option value="title">Title</option>
-<option value="author">Author</option>
-<option value="genre">Genre</option>
-<option value="rating">Rating</option>
-</select>
-<select id="filterSelect">
-<option value="">Filter by status</option>
-<option value="to-read">To Read</option>
-<option value="reading">Reading</option>
-<option value="completed">Completed</option>
-</select>
-<div class="search-actions">
-<button id="searchBtn">Search</button>
-<button id="clearResults">Reset View</button>
-</div>
-</div>
-<div class="panel">
-<h2>Currently Reading</h2>
-<div id="readingBooks"></div>
-</div>
-<div class="panel">
-<h2>Finished Reading</h2>
-<div id="finishedBooks"></div>
-</div>
-</div>
-<!-- RIGHT PANEL -->
-<div class="right-panel">
-<div class="bookshelf">
-<h2>📚 My Bookshelf</h2>
-<div id="bookshelfGrid"></div>
-</div>
-<div class="library">
-<h2>Your Library</h2>
-<p id="libraryStatus"></p>
-<div id="bookList"></div>
-</div>
-</div>
-</main>
-<div id="toast" class="toast"></div>
-<div id="deleteModal" class="modal">
-<div class="modal-content">
-<p>Are you sure you want to delete this book?</p>
-<div class="modal-buttons">
-<button id="confirmDelete">Delete</button>
-<button id="cancelDelete">Cancel</button>
-</div>
-</div>
-</div>
-<button id="backToTop">⬆ Top</button>
-
-</div>
-<!-- end mainApp -->
-
-<script src="js.js"></script>
+    <script src="js.js"></script>
 </body>
 </html>
