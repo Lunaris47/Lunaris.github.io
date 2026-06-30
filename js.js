@@ -373,7 +373,7 @@ function clearForm() {
 // GOOGLE BOOKS API CONFIG
 // ===============================
 
-const GOOGLE_BOOKS_API_KEY = "AIzaSyC2qbVbaTI6fHCjX1pvzG3zGdUQSB0-p5A";
+const GOOGLE_BOOKS_API_KEY = "AIzaSyCHwnXbzKuess1M4n8kNs87eyQaOwyPDIc";;
 
 async function getBookCover(book) {
 
