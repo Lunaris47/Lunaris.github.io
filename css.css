@@ -655,3 +655,117 @@ html,body{
     }
 
 }
+
+/* ===============================
+   AUTH SCREEN
+=============================== */
+
+.auth-screen{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    background:#f6f1e7;
+}
+
+.auth-box{
+    background:#fffaf3;
+    padding:40px;
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.12);
+    width:100%;
+    max-width:380px;
+    text-align:center;
+}
+
+.auth-box h1{
+    margin:0 0 5px;
+}
+
+.auth-subtitle{
+    font-style:italic;
+    opacity:.7;
+    margin-bottom:25px;
+}
+
+.auth-tabs{
+    display:flex;
+    margin-bottom:20px;
+    border-bottom:2px solid #e8dcc7;
+}
+
+.auth-tab{
+    flex:1;
+    background:none;
+    border:none;
+    padding:10px;
+    font-weight:600;
+    cursor:pointer;
+    opacity:.5;
+    border-bottom:2px solid transparent;
+}
+
+.auth-tab.active{
+    opacity:1;
+    color:#7a9e7e;
+    border-bottom:2px solid #7a9e7e;
+}
+
+.auth-form input{
+    width:100%;
+    box-sizing:border-box;
+    padding:10px 12px;
+    margin-bottom:12px;
+    border-radius:6px;
+    border:1px solid #d8cbb5;
+    font-size:14px;
+}
+
+.auth-form button{
+    width:100%;
+    padding:12px;
+    background:#7a9e7e;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:15px;
+}
+
+.auth-form button:hover{
+    background:#5f8262;
+}
+
+.auth-error{
+    color:#c97c5d;
+    font-size:13px;
+    min-height:16px;
+    margin-bottom:8px;
+}
+
+
+/* ===============================
+   LOGOUT BUTTON
+=============================== */
+
+.logout-btn{
+    position:absolute;
+    top:20px;
+    right:20px;
+    padding:8px 14px;
+    background:#c97c5d;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+.logout-btn:hover{
+    background:#a65f45;
+}
+
+header{
+    position:relative;
+}

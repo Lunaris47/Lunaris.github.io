@@ -1,12 +1,190 @@
 // ===============================
-// DATA (Persistent)
+// API CONFIG
 // ===============================
 
-let books = JSON.parse(localStorage.getItem("books")) || [];
+const API_BASE = "https://booklog-api-production.up.railway.app/api";
+
+let books = [];
 let selectedBookIndex = null;
 let recentlyDeletedBook = null;
 let recentlyDeletedIndex = null;
 let undoTimer = null;
+
+
+// ===============================
+// AUTH HELPERS
+// ===============================
+
+function getToken(){
+    return sessionStorage.getItem("token");
+}
+
+function setToken(token){
+    sessionStorage.setItem("token", token);
+}
+
+function clearToken(){
+    sessionStorage.removeItem("token");
+}
+
+function isLoggedIn(){
+    return getToken() !== null;
+}
+
+/**
+ * Wrapper around fetch that automatically attaches the JWT token
+ * and handles common error cases (like expired tokens).
+ */
+async function apiFetch(endpoint, options = {}){
+
+    const headers = {
+        "Content-Type": "application/json",
+        ...options.headers
+    };
+
+    const token = getToken();
+    if(token){
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers
+    });
+
+    if(response.status === 401 || response.status === 403){
+        clearToken();
+        showAuthScreen();
+        throw new Error("Session expired. Please log in again.");
+    }
+
+    return response;
+}
+
+
+// ===============================
+// AUTH SCREEN LOGIC
+// ===============================
+
+function showAuthScreen(){
+    document.getElementById("authScreen").style.display = "flex";
+    document.getElementById("mainApp").style.display = "none";
+}
+
+function showMainApp(){
+    document.getElementById("authScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+    loadBooks();
+}
+
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+loginTab.addEventListener("click", () => {
+    loginTab.classList.add("active");
+    registerTab.classList.remove("active");
+    loginForm.style.display = "block";
+    registerForm.style.display = "none";
+});
+
+registerTab.addEventListener("click", () => {
+    registerTab.classList.add("active");
+    loginTab.classList.remove("active");
+    registerForm.style.display = "block";
+    loginForm.style.display = "none";
+});
+
+loginBtn.addEventListener("click", async () => {
+
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const errorDiv = document.getElementById("loginError");
+
+    errorDiv.textContent = "";
+
+    if(!username || !password){
+        errorDiv.textContent = "Please enter both username and password.";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if(!response.ok){
+            errorDiv.textContent = data.error || "Login failed.";
+            return;
+        }
+
+        setToken(data.token);
+        showMainApp();
+
+    } catch (error) {
+        errorDiv.textContent = "Could not connect to server.";
+    }
+
+});
+
+registerBtn.addEventListener("click", async () => {
+
+    const username = document.getElementById("registerUsername").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value.trim();
+    const errorDiv = document.getElementById("registerError");
+
+    errorDiv.textContent = "";
+
+    if(!username || !email || !password){
+        errorDiv.textContent = "Please fill out all fields.";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if(!response.ok){
+            errorDiv.textContent = data.error || "Registration failed.";
+            return;
+        }
+
+        // Auto-login after successful registration
+        const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+
+        const loginData = await loginResponse.json();
+        setToken(loginData.token);
+        showMainApp();
+
+    } catch (error) {
+        errorDiv.textContent = "Could not connect to server.";
+    }
+
+});
+
+logoutBtn.addEventListener("click", () => {
+    clearToken();
+    books = [];
+    showAuthScreen();
+});
 
 
 // ===============================
@@ -16,7 +194,7 @@ let undoTimer = null;
 const addBookBtn = document.getElementById("addBookBtn");
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
-const sortSelect = document.getElementById("sortSelect"); // FIXED
+const sortSelect = document.getElementById("sortSelect");
 const filterSelect = document.getElementById("filterSelect");
 const clearResultsBtn = document.getElementById("clearResults");
 const deleteModal = document.getElementById("deleteModal");
@@ -34,6 +212,21 @@ let bookToDeleteIndex = null;
 
 
 // ===============================
+// LOAD BOOKS FROM API
+// ===============================
+
+async function loadBooks(){
+    try {
+        const response = await apiFetch("/books");
+        books = await response.json();
+        renderBooks();
+    } catch (error) {
+        showToast("Could not load your books.");
+    }
+}
+
+
+// ===============================
 // EVENT LISTENERS
 // ===============================
 
@@ -44,7 +237,7 @@ titleInput.addEventListener("input", function(){
     document.getElementById("titleWarning").textContent = "";
 });
 
-addBookBtn.addEventListener("click", function () {
+addBookBtn.addEventListener("click", async function () {
 
     const title = titleInput.value.trim();
     const author = authorInput.value.trim() || "Unknown";
@@ -53,8 +246,8 @@ addBookBtn.addEventListener("click", function () {
     const status = statusInput.value;
     let rating = Number(ratingInput.value);
 
-    if(status !== "completed" && rating > 0){
-        showToast("⭐ You can only rate books after marking them as completed.");
+    if(status === "to-read" && rating > 0){
+        showToast("⭐ You can only rate books you've started reading.");
         return;
     }
 
@@ -76,29 +269,35 @@ addBookBtn.addEventListener("click", function () {
         return;
     }
 
-    const book = {
-        title,
-        author: author || "Unknown",
-        genre,
-        series,
-        status,
-        rating
-    };
+    const coverURL = await getBookCover({ title, author });
 
-    getBookCover(book).then((cover)=>{
+    try {
+        const response = await apiFetch("/books", {
+            method: "POST",
+            body: JSON.stringify({
+                title,
+                author: author || "Unknown",
+                genre,
+                series,
+                status,
+                rating: String(rating),
+                coverUrl: coverURL
+            })
+        });
 
-        book.coverURL = cover;
+        if(!response.ok){
+            const data = await response.json();
+            showToast(data.error || "Could not add book.");
+            return;
+        }
 
-        books.push(book);
-
-        saveToStorage();
-        renderBooks();
-
+        await loadBooks();
         showToast("📚 Book added to your library!");
-
         clearForm();
 
-    });
+    } catch (error) {
+        showToast("Could not connect to server.");
+    }
 
 });
 
@@ -129,9 +328,9 @@ searchInput.addEventListener("keydown", function(event){
 
 statusInput.addEventListener("change", function(){
 
-    if(statusInput.value !== "completed"){
+    if(statusInput.value === "to-read"){
         ratingInput.value = "0";
-        showToast("⭐ Ratings are only allowed for completed books.");
+        showToast("⭐ Ratings are only allowed once you've started reading.");
     }
 
 });
@@ -155,15 +354,10 @@ function clearForm() {
 	
 }
 
-function saveToStorage() {
-    localStorage.setItem("books", JSON.stringify(books));
-}
-
 async function getBookCover(book) {
 
-    // If we already have a saved cover, use it
-    if (book.coverURL) {
-        return book.coverURL;
+    if (book.coverURL || book.coverUrl) {
+        return book.coverURL || book.coverUrl;
     }
 
     const query = encodeURIComponent(`${book.title} ${book.author}`);
@@ -187,10 +381,6 @@ async function getBookCover(book) {
         else if (match.cover_i) {
             cover = `https://covers.openlibrary.org/b/id/${match.cover_i}-M.jpg`;
         }
-
-        // Save cover so we don't fetch again
-        book.coverURL = cover;
-        saveToStorage();
 
         return cover;
 
@@ -232,7 +422,6 @@ function renderBooks() {
 
     let filteredBooks = books;
 
-	// Apply search
 	if(isSearching){
 		filteredBooks = filteredBooks.filter(book =>
 			book.title.toLowerCase().includes(searchTerm) ||
@@ -241,7 +430,6 @@ function renderBooks() {
 		);
 	}
 
-	// Apply filter
 	if(selectedFilter){
 		filteredBooks = filteredBooks.filter(book =>
 			book.status === selectedFilter
@@ -298,10 +486,6 @@ function renderBooks() {
 	}
 
 
-    // ===============================
-    // BROWSING MODE (bookshelf controls)
-    // ===============================
-
     if(!showResultsMode){
 
     if(selectedBookIndex === null){
@@ -323,10 +507,6 @@ function renderBooks() {
 }
 
 
-    // ===============================
-    // RENDER BOOK CARDS
-    // ===============================
-
     for(const book of filteredBooks) {
 
         const originalIndex = books.indexOf(book);
@@ -335,7 +515,7 @@ function renderBooks() {
 		card.classList.add("book-card");
 		card.id = `book-${originalIndex}`;
 
-        const coverURL = book.coverURL || null;
+        const coverURL = book.coverUrl || book.coverURL || null;
 
         card.innerHTML = `
             <div class="book-card-content">
@@ -389,11 +569,11 @@ function renderBooks() {
             <div class="book-rating">
 				<strong>Rating:</strong>
 				${renderStars(book.rating, originalIndex)}
-				${book.status === "completed" && book.rating === 0 
+				${book.status !== "to-read" && book.rating === 0 
 					? `<div class="rating-note">Not rated yet</div>` 
 					: ""}
-				${book.status !== "completed" 
-				? `<div class="rating-note">Finish the book to rate it.</div>` 
+				${book.status === "to-read" 
+				? `<div class="rating-note">Start reading to rate it.</div>` 
 				: ""}
             </div>
 
@@ -486,12 +666,11 @@ function renderSeriesInfo(book, index){
 
         const img = document.createElement("img");
 
-        img.src = b.coverURL || "https://via.placeholder.com/50x75";
+        img.src = (b.coverUrl || b.coverURL) || "https://via.placeholder.com/50x75";
         img.classList.add("series-mini-book");
 
         img.onclick = () => {
 
-			// Clear search/filter/sort so the clicked book takes priority
 			searchInput.value = "";
 			filterSelect.value = "";
 			sortSelect.value = "";
@@ -552,10 +731,12 @@ function renderBookshelf(){
             const index = books.indexOf(book);
             let bookElement;
 
-            if(book.coverURL){
+            const coverURL = book.coverUrl || book.coverURL;
+
+            if(coverURL){
 
                 bookElement = document.createElement("img");
-                bookElement.src = book.coverURL;
+                bookElement.src = coverURL;
 
             }else{
 
@@ -566,13 +747,6 @@ function renderBookshelf(){
                     <div class="book-title">${book.title}</div>
                     <div class="book-author">${book.author || ""}</div>
                 `;
-
-                getBookCover(book).then((cover)=>{
-                    if(cover){
-                        book.coverURL = cover;
-                        saveToStorage();
-                    }
-                });
             }
 
             bookElement.classList.add("bookshelf-book");
@@ -643,14 +817,15 @@ function renderBookSection(containerId, status){
     filteredBooks.forEach(book => {
 
         const index = books.indexOf(book);
+        const coverURL = book.coverUrl || book.coverURL;
 
         const item = document.createElement("div");
         item.classList.add("reading-book");
 
-        if(book.coverURL){
+        if(coverURL){
 
             item.innerHTML = `
-                <img src="${book.coverURL}" class="reading-cover">
+                <img src="${coverURL}" class="reading-cover">
 
                 <div class="reading-text">
                     <div class="reading-title">${book.title}</div>
@@ -725,34 +900,61 @@ function deleteBook(index){
 
 }
 
-function changeStatus(index, newStatus) {
+async function changeStatus(index, newStatus) {
 
-    books[index].status = newStatus;
+    const book = books[index];
 
-    if(newStatus !== "completed"){
-        books[index].rating = 0;
+    try {
+        const response = await apiFetch(`/books/${book.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if(!response.ok){
+            showToast("Could not update status.");
+            return;
+        }
+
+        const updated = await response.json();
+        books[index] = updated;
+
+        if(newStatus === "completed"){
+            celebrateCompletion();
+        }
+
+        renderBooks();
+        renderBookSection("readingBooks", "reading");
+        renderBookSection("finishedBooks", "completed");
+        renderReadingStats();
+
+    } catch (error) {
+        showToast("Could not connect to server.");
     }
-
-    saveToStorage();
-
-    if(newStatus === "completed"){
-        celebrateCompletion();
-    }
-
-    renderBooks();
-
-    renderBookSection("readingBooks", "reading");
-    renderBookSection("finishedBooks", "completed");
-    renderReadingStats();
 }
 
-function setRating(index, rating){
+async function setRating(index, rating){
 
-    // If user clicks the same rating again, remove the rating
-    books[index].rating = books[index].rating === rating ? 0 : rating;
+    const book = books[index];
+    const newRating = book.rating === rating ? 0 : rating;
 
-    saveToStorage();
-    renderBooks();
+    try {
+        const response = await apiFetch(`/books/${book.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ rating: String(newRating) })
+        });
+
+        if(!response.ok){
+            showToast("Could not update rating.");
+            return;
+        }
+
+        const updated = await response.json();
+        books[index] = updated;
+        renderBooks();
+
+    } catch (error) {
+        showToast("Could not connect to server.");
+    }
 }
 
 function showToast(message){
@@ -790,19 +992,33 @@ function showUndoToast(){
 
 }
 
-function undoDelete(){
+async function undoDelete(){
 
     if(recentlyDeletedBook !== null){
 
-        // Restore the book
-        books.splice(recentlyDeletedIndex, 0, recentlyDeletedBook);
+        try {
+            const response = await apiFetch("/books", {
+                method: "POST",
+                body: JSON.stringify({
+                    title: recentlyDeletedBook.title,
+                    author: recentlyDeletedBook.author,
+                    genre: recentlyDeletedBook.genre,
+                    series: recentlyDeletedBook.series,
+                    status: recentlyDeletedBook.status,
+                    rating: String(recentlyDeletedBook.rating),
+                    coverUrl: recentlyDeletedBook.coverUrl
+                })
+            });
 
-        saveToStorage();
+            if(response.ok){
+                await loadBooks();
+                selectedBookIndex = books.length - 1;
+                renderBooks();
+            }
 
-        // Select the restored book so the UI updates correctly
-        selectedBookIndex = recentlyDeletedIndex;
-
-        renderBooks();
+        } catch (error) {
+            showToast("Could not restore book.");
+        }
     }
 
     const toast = document.getElementById("toast");
@@ -841,7 +1057,7 @@ function editField(index, field){
     }
 }
 
-function saveField(index, field){
+async function saveField(index, field){
 
     const input = document.getElementById(`input-${field}-${index}`);
     const value = input.value.trim();
@@ -851,12 +1067,28 @@ function saveField(index, field){
         return;
     }
 
-    books[index][field] = value;
+    const book = books[index];
 
-    saveToStorage();
-    renderBooks();
+    try {
+        const response = await apiFetch(`/books/${book.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ [field]: value })
+        });
 
-    showToast("Field updated.");
+        if(!response.ok){
+            showToast("Could not update field.");
+            return;
+        }
+
+        const updated = await response.json();
+        books[index] = updated;
+
+        renderBooks();
+        showToast("Field updated.");
+
+    } catch (error) {
+        showToast("Could not connect to server.");
+    }
 }
 
 function cancelField(index, field){
@@ -871,7 +1103,7 @@ function cancelField(index, field){
 function renderStars(rating, index){
 
     const book = books[index];
-    const isCompleted = book.status === "completed";
+    const canRate = book.status !== "to-read";
 
     let starsHTML = "";
 
@@ -879,9 +1111,9 @@ function renderStars(rating, index){
 
         starsHTML += `
 		<span 
-			class="star ${!isCompleted ? "star-disabled" : ""}"
+			class="star ${!canRate ? "star-disabled" : ""}"
 			data-value="${i}"
-			${isCompleted ? `
+			${canRate ? `
 				onclick="setRating(${index}, ${i})"
 				onmouseover="previewRating(${index}, ${i})"
 				onmouseout="restoreRating(${index})"
@@ -921,31 +1153,43 @@ function restoreRating(index){
 // MODAL FUNCTION
 // ===============================
 
-confirmDeleteBtn.onclick = function(){
+confirmDeleteBtn.onclick = async function(){
 
     if(bookToDeleteIndex !== null){
 
-        // Store deleted book BEFORE removal
-        recentlyDeletedBook = books[bookToDeleteIndex];
+        const book = books[bookToDeleteIndex];
+
+        recentlyDeletedBook = book;
         recentlyDeletedIndex = bookToDeleteIndex;
 
-        // Remove book
-        books.splice(bookToDeleteIndex, 1);
+        try {
+            const response = await apiFetch(`/books/${book.id}`, {
+                method: "DELETE"
+            });
 
-        if(selectedBookIndex === bookToDeleteIndex){
-            selectedBookIndex = null;
+            if(!response.ok){
+                showToast("Could not delete book.");
+                deleteModal.style.display = "none";
+                return;
+            }
+
+            if(selectedBookIndex === bookToDeleteIndex){
+                selectedBookIndex = null;
+            }
+
+            if(selectedBookIndex > bookToDeleteIndex){
+                selectedBookIndex--;
+            }
+
+            await loadBooks();
+
+            showUndoToast();
+
+            bookToDeleteIndex = null;
+
+        } catch (error) {
+            showToast("Could not connect to server.");
         }
-
-        if(selectedBookIndex > bookToDeleteIndex){
-            selectedBookIndex--;
-        }
-
-        saveToStorage();
-        renderBooks();
-		
-		showUndoToast();
-		
-		bookToDeleteIndex = null;
     }
 
     deleteModal.style.display = "none";
@@ -1006,9 +1250,10 @@ function celebrateCompletion() {
 
 document.addEventListener("DOMContentLoaded", function(){
 
-    renderBooks();
-    renderBookSection("readingBooks", "reading");
-	renderBookSection("finishedBooks", "completed");
-	renderReadingStats();
+    if(isLoggedIn()){
+        showMainApp();
+    } else {
+        showAuthScreen();
+    }
 
 });
