@@ -369,32 +369,43 @@ function clearForm() {
 	
 }
 
+// ===============================
+// GOOGLE BOOKS API CONFIG
+// ===============================
+
+const GOOGLE_BOOKS_API_KEY = "AIzaSyC2qbVbaTI6fHCjX1pvzG3zGdUQSB0-p5A";
+
 async function getBookCover(book) {
 
     if (book.coverURL || book.coverUrl) {
         return book.coverURL || book.coverUrl;
     }
 
-    const query = encodeURIComponent(`${book.title} ${book.author}`);
+    const query = encodeURIComponent(`intitle:${book.title} inauthor:${book.author}`);
 
     try {
-        const response = await fetch(`https://openlibrary.org/search.json?q=${query}`);
+        const response = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${query}&key=${GOOGLE_BOOKS_API_KEY}`
+        );
         const data = await response.json();
 
-        if (!data.docs || data.docs.length === 0) return null;
+        if (!data.items || data.items.length === 0) return null;
 
-        const match = data.docs.find(item =>
-            item.title &&
-            item.title.toLowerCase().includes(book.title.toLowerCase())
-        ) || data.docs[0];
+        const match = data.items[0];
+        const volumeInfo = match.volumeInfo;
 
         let cover = null;
-
-        if (match.isbn && match.isbn.length > 0) {
-            cover = `https://covers.openlibrary.org/b/isbn/${match.isbn[0]}-M.jpg`;
+        if (volumeInfo.imageLinks && volumeInfo.imageLinks.thumbnail) {
+            // Use https instead of http, and request a larger size
+            cover = volumeInfo.imageLinks.thumbnail
+                .replace("http://", "https://")
+                .replace("zoom=1", "zoom=2");
         }
-        else if (match.cover_i) {
-            cover = `https://covers.openlibrary.org/b/id/${match.cover_i}-M.jpg`;
+
+        // Google Books sometimes includes series info in the subtitle
+        // or as part of a "seriesInfo" field (less common, but check both)
+        if (volumeInfo.seriesInfo && volumeInfo.seriesInfo.bookDisplayNumber) {
+            book.detectedSeries = volumeInfo.seriesInfo.volumeSeries?.[0]?.seriesId || null;
         }
 
         return cover;
