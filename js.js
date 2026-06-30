@@ -205,6 +205,7 @@ const ratingInput = document.getElementById("ratingInput");
 const titleInput = document.getElementById("titleInput");
 const authorInput = document.getElementById("authorInput");
 const genreInput = document.getElementById("genreInput");
+const genreOtherInput = document.getElementById("genreOtherInput");
 const seriesInput = document.getElementById("seriesInput");
 const titleWarning = document.getElementById("titleWarning");
 
@@ -241,7 +242,7 @@ addBookBtn.addEventListener("click", async function () {
 
     const title = titleInput.value.trim();
     const author = authorInput.value.trim() || "Unknown";
-    const genre = genreInput.value;
+    const genre = genreInput.value === "Other" ? genreOtherInput.value.trim() : genreInput.value;
     const series = seriesInput.value;
     const status = statusInput.value;
     let rating = Number(ratingInput.value);
@@ -335,6 +336,18 @@ statusInput.addEventListener("change", function(){
 
 });
 
+genreInput.addEventListener("change", function(){
+
+    if(genreInput.value === "Other"){
+        genreOtherInput.style.display = "block";
+        genreOtherInput.focus();
+    } else {
+        genreOtherInput.style.display = "none";
+        genreOtherInput.value = "";
+    }
+
+});
+
 
 // ===============================
 // HELPER FUNCTIONS
@@ -344,6 +357,8 @@ function clearForm() {
     titleInput.value = "";
 	authorInput.value = "";
 	genreInput.value = "";
+	genreOtherInput.value = "";
+	genreOtherInput.style.display = "none";
 	seriesInput.value = "";
     document.getElementById("statusInput").value = "to-read";
     document.getElementById("ratingInput").value = "0";
